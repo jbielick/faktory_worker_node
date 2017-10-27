@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+
+const program = require('../cli');
+const Manager = require('../manager');
+const manager = new Manager({
+  queues: program.queues
+});
+
+manager.run();

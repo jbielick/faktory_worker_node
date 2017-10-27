@@ -1,0 +1,13 @@
+{
+  "name": "faktory_worker_node",
+  "version": "0.1.0",
+  "description": "faktory worker process for node apps",
+  "main": "index.js",
+  "author": "Josh Bielick <jbielick@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^2.11.0",
+    "debug": "^3.1.0",
+    "redis-parser": "^3.0.0"
+  }
+}
