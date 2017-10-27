@@ -51,7 +51,7 @@ indirection is useful for SaaSes, Heroku Addons, etc.
 * How do I push new jobs to Faktory?
 
 ```js
-const faktory = require('faktory');
+const faktory = require('faktory-worker');
 
 faktory
   .connect()

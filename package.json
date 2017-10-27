@@ -1,10 +1,17 @@
 {
-  "name": "faktory_worker_node",
+  "name": "faktory-worker",
   "version": "0.1.0",
   "description": "faktory worker process for node apps",
   "main": "index.js",
   "author": "Josh Bielick <jbielick@gmail.com>",
-  "license": "MIT",
+  "license": "GNU",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jbielick/faktory_worker_node"
+  },
+  "bin": {
+    "faktory-worker": "bin/faktory-worker"
+  },
   "dependencies": {
     "commander": "^2.11.0",
     "debug": "^3.1.0",
