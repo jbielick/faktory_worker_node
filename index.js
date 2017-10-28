@@ -11,7 +11,7 @@ module.exports = {
     registry[name] = fn;
   },
   async connect(...args) {
-    return await client.connect();
+    return await new Client(...args).connect();
   },
   async work(options = {}) {
     manager = new Manager(Object.assign({}, options, { registry }));
