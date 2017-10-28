@@ -118,7 +118,9 @@ const Manager = require('../manager');
   });
 
   test('stop shuts job processing down', async (t) => {
-    const manager = create();
+    const manager = create({
+      queues: ['nonexist']
+    });
     await manager.run();
     await manager.stop();
     t.pass();
