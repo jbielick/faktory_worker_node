@@ -45,7 +45,7 @@ module.exports = class Manager {
    * @return {[type]} [description]
    */
   stop() {
-    this.gracefulShutdown = true;
+    this.quiet();
     this.log('Stopping');
     let start = Date.now();
 
@@ -54,9 +54,8 @@ module.exports = class Manager {
         debug(`Shutting down. In progress: ${this.inProgress}`);
         // fail any currently processing jobs
         this.client.shutdown();
-        return true;
       } else {
-        setTimeout(shutdown, 100);
+        setTimeout(shutdown, 10);
       }
     }
 
@@ -71,15 +70,18 @@ module.exports = class Manager {
 
   async loop() {
     for (;;) {
-      if (this.gracefulShutdown) break;
+      if (this.gracefulShutdown) {
+        break;
+      }
       if (this.inProgress >= this.concurrency) {
         await this.sleep(100);
         continue;
       }
+
       const job = await this.client.fetch(...this.queues);
+
       if (job) {
         this.dispatch(job);
-        this.inProgress++;
       }
     }
   }
@@ -96,6 +98,7 @@ module.exports = class Manager {
       throw err;
     }
 
+    this.inProgress++;
     // @TODO invoke middleware stack. koa-compose?
     // @TODO keep in-progress queue to FAIL those jobs during shutdown
     try {

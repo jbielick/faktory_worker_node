@@ -71,9 +71,11 @@ const Manager = require('../manager');
   test('FAILs and throws when no job is registered', async (t) => {
     const manager = create();
     const jid = 'wellhello';
+
     manager.client.fail = (failed_jid, e) => {
       t.is(failed_jid, jid);
     };
+
     await t.throws(manager.dispatch({
       jid,
       jobtype: 'NonExistant'
