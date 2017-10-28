@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -e
+
+docker run --rm -p 7419:7419 -p 7420:7420 contribsys/faktory:0.5.0 -b :7419 -no-tls

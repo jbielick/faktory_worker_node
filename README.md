@@ -26,13 +26,9 @@ To stop the process, send the TERM or INT signal.
 ```js
 const faktory = require('faktory-worker');
 
-// define a function for your job
 const doWork = async (id, size) => {
-  // do some work with the given arguments
-  // call `done` when finished with or without an error
-  console.log(`working on job ${ctx.jid}`);
-
   await somethingAsync();
+  // job will automatically be ack'd if it does not error
 }
 
 faktory.register('MyDoWorkJob', doWork);
@@ -59,7 +55,7 @@ const faktory = require('faktory-worker');
 const client = await faktory.connect();
 
 client.push({
-  queue: 'default',
+  queue: 'default', // `default` if omitted
   jobtype: 'MyDoWorkJob',
   args: []
 });
@@ -72,24 +68,22 @@ See [the wiki](https://github.com/contribsys/faktory/wiki) for details.
 
 ## TODO
 
- - [ ] Tests
  - [ ] TLS
- - [ ] Authentication
  - [ ] Middleware
  - [ ] CLI API
- - [ ] Fail jobs
  - [ ] Retries
  - [ ] Heartbeat
- - [ ] Add'l client commands API
- - [ ] Labels
+ - [x] Tests
+ - [x] Authentication
+ - [x] Fail jobs
+ - [x] Add'l client commands API
+ - [x] Labels
 
 ## Development
 
-Use docker-compose for easy setup of the faktory server and node container:
+Install docker.
 
-`docker-compose run server` to start the faktory server container
-
-`docker-compose run client bash` to start the node client container. The server is available at `server:7419`
+`bin/server` will run the faktory server in a docker container. The server is available at `localhost:7419`
 
 Use `DEBUG=faktory*` to see debug lines.
 
