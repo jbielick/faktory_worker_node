@@ -44,22 +44,25 @@ module.exports = class Manager {
    * stop accepting new jobs, fail those that are in progress and shutdown
    * @return {[type]} [description]
    */
-  stop() {
+  async stop() {
     this.quiet();
     this.log('Stopping');
     let start = Date.now();
 
-    const shutdown = () => {
-      if (this.inProgress <= 0 || Date.now() - start > 8000) {
-        debug(`Shutting down. In progress: ${this.inProgress}`);
-        // fail any currently processing jobs
-        this.client.shutdown();
-      } else {
-        setTimeout(shutdown, 10);
+    return new Promise((resolve, reject) => {
+      const shutdown = () => {
+        if (this.inProgress <= 0 || Date.now() - start > 8000) {
+          debug(`Shutting down. In progress: ${this.inProgress}`);
+          // fail any currently processing jobs
+          this.client.shutdown();
+          resolve();
+        } else {
+          setTimeout(shutdown, 10);
+        }
       }
-    }
 
-    shutdown();
+      shutdown();
+    });
   }
 
   sleep(ms) {

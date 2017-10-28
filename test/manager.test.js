@@ -41,9 +41,24 @@ const Manager = require('../manager');
       }
     });
 
-    manager.run().then(() => {
-      manager.stop();
+    manager.run();
+    manager.client.socket.unref();
+  });
+
+  test('takes queues as array or string', (t) => {
+    let manager;
+
+    manager = create({
+      queues: 'test'
     });
+
+    t.deepEqual(manager.queues, ['test']);
+
+    manager = create({
+      queues: ['test']
+    });
+
+    t.deepEqual(manager.queues, ['test']);
   });
 
   test.cb('works with args and job thunk', (t) => {
@@ -59,13 +74,12 @@ const Manager = require('../manager');
 
     const manager = create({
       registry: {
-        [jobtype]: createJobFn(t)
+        [jobtype]: createJobWithThunkFn(t)
       }
     });
 
-    manager.run().then(() => {
-      manager.stop();
-    });
+    manager.run();
+    manager.client.socket.unref();
   });
 
   test('FAILs and throws when no job is registered', async (t) => {
@@ -103,6 +117,32 @@ const Manager = require('../manager');
     );
   });
 
+  test('stop shuts job processing down', async (t) => {
+    const manager = create();
+    await manager.run();
+    await manager.stop();
+    t.pass();
+  });
+
+  test('sleep sleeps', async (t) => {
+    const manager = create();
+    let pass = false;
+    setTimeout(() => {
+      pass = true;
+    }, 2);
+    await manager.sleep(5);
+    if (pass) {
+      t.pass('slept');
+    }
+  });
+
+  test.skip('shuts down gracefully SIGINT', async (t) => {
+    const manager = create();
+    await manager.run();
+    // process.kill(process.pid, 'SIGINT');
+    t.pass();
+  });
+
 })();
 
 function create(opts) {
@@ -133,5 +173,6 @@ function createJobWithThunkFn(t) {
     t.is(await sleep(1, 'slept'), 'slept', 'awaits promises');
     t.deepEqual(args, [1, 2, 'three'], 'arguments are correct');
     t.end();
+    return true;
   }
 }
