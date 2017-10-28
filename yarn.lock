@@ -627,6 +627,10 @@ block-stream@*:
   dependencies:
     inherits "~2.0.0"
 
+blocked@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/blocked/-/blocked-1.2.1.tgz#e22efe767863c65ab8197f6252929104e1ec9ce2"
+
 bluebird@^3.0.0:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.5.1.tgz#d9551f9de98f1fcda1e683d17ee91a0602ee2eb9"

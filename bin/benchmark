@@ -1,5 +1,26 @@
-#!/usr/bin/bash
+#!/usr/bin/env node
 
-set -e
+const faktory = require('../');
+const blocked = require('blocked');
 
-# @TODO
+blocked((ms) => {
+  console.error(`Event loop blocked ${ms}`);
+}, { threshold: 10 });
+
+(async () => {
+
+  const client = await faktory.connect();
+
+  for (;;) {
+    let arr = new Array(100);
+    await Promise.all(arr.map(() => {
+      return client.push({
+        jobtype: 'MyJob',
+        args: [1, { message: 'hello' }]
+      });
+    }));
+    console.log('boop');
+  }
+
+})();
+

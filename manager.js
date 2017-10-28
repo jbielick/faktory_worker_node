@@ -1,5 +1,10 @@
 const debug = require('debug')('faktory-worker');
 const Client = require('faktory-client');
+const blocked = require('blocked');
+
+blocked((ms) => {
+  debug(`Event loop blocked ${ms}`);
+}, { threshold: 10 });
 
 module.exports = class Manager {
 
@@ -12,6 +17,7 @@ module.exports = class Manager {
       this.queues = ['default'];
     }
 
+    this.concurrency = 20;
     this.inProgress = 0;
     this.registry = registry || {};
     this.client = new Client();
@@ -31,7 +37,7 @@ module.exports = class Manager {
   quiet() {
     this.log('Quieting');
     // flush the tcp buffer before closing the connection
-    this.quiet = true;
+    this.gracefulShutdown = true;
   }
 
   /**
@@ -39,28 +45,42 @@ module.exports = class Manager {
    * @return {[type]} [description]
    */
   stop() {
-    this.quiet = true;
-    this.log('Shutting down');
+    this.gracefulShutdown = true;
+    this.log('Stopping');
     let start = Date.now();
 
-    let interval = setInterval(() => {
-      if (this.inProgress < 0 || Date.now() - start > 10000) {
+    const shutdown = () => {
+      if (this.inProgress <= 0 || Date.now() - start > 8000) {
+        debug(`Shutting down. In progress: ${this.inProgress}`);
+        // fail any currently processing jobs
         this.client.shutdown();
-        clearInterval(interval);
+        return true;
+      } else {
+        setTimeout(shutdown, 100);
       }
-    }, 100);
-    // fail the in-progress after a timeout
-    // process.exit(0);
+    }
+
+    shutdown();
+  }
+
+  sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(), ms);
+    });
   }
 
   async loop() {
     for (;;) {
+      if (this.gracefulShutdown) break;
+      if (this.inProgress >= this.concurrency) {
+        await this.sleep(100);
+        continue;
+      }
       const job = await this.client.fetch(...this.queues);
       if (job) {
         this.dispatch(job);
         this.inProgress++;
       }
-      if (this.quiet) break;
     }
   }
 

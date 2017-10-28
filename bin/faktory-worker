@@ -1,9 +1,19 @@
 #!/usr/bin/env node
 
 const program = require('../cli');
-const Manager = require('../manager');
-const manager = new Manager({
-  queues: program.queues
+const faktory = require('../');
+
+// (async () => {
+//   const client = await faktory.connect();
+//   const job = await client.fetch('default');
+//   console.log(job);
+// })();
+
+faktory.register('MyJob', async () => {
+  await new Promise((resolve, reject) => {
+    process.stdout.write('.');
+    resolve(true);
+  });
 });
 
-manager.run();
+faktory.work(program);
