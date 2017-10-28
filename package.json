@@ -1,10 +1,23 @@
 {
   "name": "faktory-worker",
   "version": "0.1.0",
-  "description": "faktory worker process for node apps",
+  "description": "A faktory worker framework for node apps",
   "main": "index.js",
   "author": "Josh Bielick <jbielick@gmail.com>",
-  "license": "GNU",
+  "license": "GPL-3.0",
+  "scripts": {
+    "test": "nyc --cache ava test/**/*.test.js",
+    "coverage": "nyc report --reporter=html"
+  },
+  "keywords": [
+    "faktory",
+    "client",
+    "node",
+    "server",
+    "job",
+    "background",
+    "async"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/jbielick/faktory_worker_node"
@@ -12,9 +25,22 @@
   "bin": {
     "faktory-worker": "bin/faktory-worker"
   },
+  "ava": {
+    "verbose": true,
+    "timeout": "10s"
+  },
+  "engines": {
+    "node": ">=7"
+  },
+  "devDependencies": {
+    "ava": "^0.23.0",
+    "nyc": "^11.2.1",
+    "coveralls": "^3.0.0"
+  },
   "dependencies": {
     "commander": "^2.11.0",
     "debug": "^3.1.0",
+    "faktory-client": "^0.2.0",
     "redis-parser": "^3.0.0"
   }
 }

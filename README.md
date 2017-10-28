@@ -22,14 +22,12 @@ To stop the process, send the TERM or INT signal.
 const faktory = require('faktory-worker');
 
 // define a function for your job
-const doWork = (ctx, done) => (id, size) => {
+const doWork = async (id, size) => {
   // do some work with the given arguments
   // call `done` when finished with or without an error
   console.log(`working on job ${ctx.jid}`);
 
-  setTimeout(() => {
-    done();
-  }, 1000);
+  await somethingAsync();
 }
 
 faktory.register('MyDoWorkJob', doWork);
@@ -53,16 +51,13 @@ indirection is useful for SaaSes, Heroku Addons, etc.
 ```js
 const faktory = require('faktory-worker');
 
-faktory
-  .connect()
-  .then((client) => (
-    client.push({
-      queue: 'default',
-      jobtype: 'MyDoWorkJob',
-      args: []
-    })
-  ))
-  .catch((err) => console.error(err))
+const client = await faktory.connect();
+
+client.push({
+  queue: 'default',
+  jobtype: 'MyDoWorkJob',
+  args: []
+});
 ```
 
 See the [Faktory client for other languages](https://github.com/contribsys/faktory/wiki/Related-Projects)

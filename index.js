@@ -1,23 +1,21 @@
-const debug = require('debug')('faktory-worker');
+const Client = require('faktory-client');
 const Manager = require('./manager');
-const Client = require('./client');
 const registry = {};
 const middleware = [];
-
-// queues?
 
 module.exports = {
   get registry() {
     return registry;
   },
-  register: (name, fn) => {
+  register(name, fn) {
     registry[name] = fn;
   },
-  connect() {
-    return new Client().connect();
+  async connect(...args) {
+    return await client.connect();
   },
-  work: (options = {}) => {
-    const manager = new Manager(Object.assign({}, options, { registry }));
-    manager.run();
+  async work(options = {}) {
+    manager = new Manager(Object.assign({}, options, { registry }));
+    await manager.run();
+    return manager;
   }
 };

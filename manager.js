@@ -1,5 +1,5 @@
-const debug = require('debug')('faktory-worker:manager');
-const Client = require('./client');
+const debug = require('debug')('faktory-worker');
+const Client = require('faktory-client');
 
 module.exports = class Manager {
 
@@ -11,8 +11,9 @@ module.exports = class Manager {
     } else {
       this.queues = ['default'];
     }
+
+    this.inProgress = 0;
     this.registry = registry || {};
-    this.exiting = false;
     this.client = new Client();
   }
 
@@ -30,7 +31,7 @@ module.exports = class Manager {
   quiet() {
     this.log('Quieting');
     // flush the tcp buffer before closing the connection
-    this.client.shutdown();
+    this.quiet = true;
   }
 
   /**
@@ -38,91 +39,69 @@ module.exports = class Manager {
    * @return {[type]} [description]
    */
   stop() {
-    this.exiting = true;
-    this.quiet();
+    this.quiet = true;
     this.log('Shutting down');
+    let start = Date.now();
+
+    let interval = setInterval(() => {
+      if (this.inProgress < 0 || Date.now() - start > 10000) {
+        this.client.shutdown();
+        clearInterval(interval);
+      }
+    }, 100);
     // fail the in-progress after a timeout
     // process.exit(0);
   }
 
-  loop() {
-    return this.client
-      .fetch(...this.queues)
-      .then((resp) => {
-        if (resp) {
-          this.dispatch(resp.payload);
-        }
-        this.loop();
-      })
-      .catch((err) => {
-        console.error(err);
-        this.stop();
-      });
+  async loop() {
+    for (;;) {
+      const job = await this.client.fetch(...this.queues);
+      if (job) {
+        this.dispatch(job);
+        this.inProgress++;
+      }
+      if (this.quiet) break;
+    }
   }
 
-  dispatch(job) {
+  async dispatch(job) {
     debug(`DISPATCH: ${JSON.stringify(job)}`);
     const { jid, jobtype, args } = job;
     const jobFn = this.registry[jobtype];
+    let result;
 
     if (!jobFn) {
-      this.fail(
-        jid,
-        new Error(`Job function named ${jobFn} is not registered`)
-      );
+      const err = new Error(`No jobtype registered for: ${jobtype}`);
+      await this.client.fail(jid, err);
+      throw err;
     }
 
     // @TODO invoke middleware stack. koa-compose?
     // @TODO keep in-progress queue to FAIL those jobs during shutdown
     try {
-      jobFn(job, /* done */ (err) => {
-        if (err) {
-          return this.fail(jid, err);
-        }
-        this.ack(jid);
-      })(args);
-
-    } catch(e) {
-      this.fail(jid, e);
-    }
-  }
-
-  ack(jid) {
-    return this.client.send(['ACK', { jid }], 'OK');
-  }
-
-  fail(jid, e) {
-    console.error(e);
-    return this.client.send([
-      'FAIL',
-      {
-        message: e.message,
-        errtype: e.code,
-        jid: jid,
-        backtrace: e.stack.split('\n')
+      const thunk = await jobFn(...args);
+      if (typeof thunk === 'function') {
+        await thunk(job);
       }
-    ], 'OK');
+      await this.client.ack(jid);
+    } catch(e) {
+      await this.client.fail(jid, e);
+      throw e;
+    } finally {
+      this.inProgress--;
+    }
+    return result;
   }
 
   log(msg) {
-    const { wid, pid } = this.meta;
+    const { wid, pid } = this.client;
     console.log(`${new Date().toJSON()} wid=${wid} pid=${pid} ${msg}`)
   }
 
-  run() {
+  async run() {
     this.trapSignals();
-
-    this.client
-      .connect()
-      .then((meta) => {
-        this.meta = meta;
-        this.log(`Connected to server`);
-        this.loop();
-      })
-      .catch((err) => {
-        console.error('Failed to start Faktory worker manager:');
-        console.error(err);
-        this.stop();
-      });
+    await this.client.connect();
+    this.log(`Connected to server`);
+    this.loop();
   }
 }

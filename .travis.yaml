@@ -1,0 +1,9 @@
+sudo: required
+language: node_js
+node_js:
+  - 7
+  - 8
+services:
+  - docker
+after_success:
+  - './node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls'

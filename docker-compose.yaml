@@ -1,5 +1,6 @@
 client:
-  build: .
+  image: node:8
+  working_dir: /src
   environment:
     FAKTORY_URL: server:7419
   links:
