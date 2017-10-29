@@ -2,8 +2,9 @@
 
 [![Travis branch](https://img.shields.io/travis/jbielick/faktory_worker_node/master.svg)](https://travis-ci.org/jbielick/faktory-client)
 [![Coveralls github branch](https://img.shields.io/coveralls/github/jbielick/faktory_worker_node/master.svg)](https://coveralls.io/github/jbielick/faktory_worker_node)
-[![David](https://img.shields.io/david/jbielick/faktory_worker_node.svg)](#)
-[![node](https://img.shields.io/node/v/faktory-worker.svg)]()
+![David](https://img.shields.io/david/jbielick/faktory_worker_node.svg)
+![node](https://img.shields.io/node/v/faktory-worker.svg)
+[![npm](https://img.shields.io/npm/dm/faktory-worker.svg)](https://www.npmjs.com/package/faktory-worker)
 
 This repository provides a client and node worker framework for [Faktory](https://github.com/contribsys/faktory). The client allows you to push jobs and communicate with the Faktory server and the worker process fetches background jobs from the Faktory server and processes them.
 
