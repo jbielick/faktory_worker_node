@@ -9,7 +9,7 @@ blocked((ms) => {
 module.exports = class Manager {
 
   constructor(options = {}) {
-    const { queues, registry } = options;
+    const { queues, registry, concurrency } = options;
 
     if (options.queues) {
       this.queues = Array.isArray(queues) ? queues : [queues];
@@ -17,7 +17,7 @@ module.exports = class Manager {
       this.queues = ['default'];
     }
 
-    this.concurrency = 20;
+    this.concurrency = concurrency || 20;
     this.inProgress = 0;
     this.registry = registry || {};
     this.client = new Client();
