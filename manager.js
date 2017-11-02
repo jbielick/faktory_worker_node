@@ -45,15 +45,17 @@ module.exports = class Manager {
    * @return {[type]} [description]
    */
   async stop() {
+    let start = Date.now();
+
     this.quiet();
     this.log('Stopping');
-    let start = Date.now();
 
     return new Promise((resolve, reject) => {
       const shutdown = () => {
         if (this.inProgress <= 0 || Date.now() - start > 8000) {
           debug(`Shutting down. In progress: ${this.inProgress}`);
           // fail any currently processing jobs
+          clearInterval(this.hearbeat);
           this.client.shutdown();
           resolve();
         } else {
@@ -67,7 +69,7 @@ module.exports = class Manager {
 
   sleep(ms) {
     return new Promise((resolve) => {
-      setTimeout(() => resolve(), ms);
+      setTimeout(resolve, ms);
     });
   }
 
@@ -77,7 +79,7 @@ module.exports = class Manager {
         break;
       }
       if (this.inProgress >= this.concurrency) {
-        await this.sleep(100);
+        await this.sleep(10);
         continue;
       }
 
@@ -89,23 +91,15 @@ module.exports = class Manager {
     }
   }
 
-  async dispatch(job) {
-    debug(`DISPATCH: ${JSON.stringify(job)}`);
-    const { jid, jobtype, args } = job;
-    const jobFn = this.registry[jobtype];
+  async execute(fn, job) {
+    const { jid, args } = job;
     let result;
-
-    if (!jobFn) {
-      const err = new Error(`No jobtype registered for: ${jobtype}`);
-      await this.client.fail(jid, err);
-      throw err;
-    }
 
     this.inProgress++;
     // @TODO invoke middleware stack. koa-compose?
     // @TODO keep in-progress queue to FAIL those jobs during shutdown
     try {
-      const thunk = await jobFn(...args);
+      const thunk = await fn(...args);
       if (typeof thunk === 'function') {
         await thunk(job);
       }
@@ -116,7 +110,22 @@ module.exports = class Manager {
     } finally {
       this.inProgress--;
     }
+
     return result;
+  }
+
+  async dispatch(job) {
+    debug(`DISPATCH: ${JSON.stringify(job)}`);
+    const { jobtype, jid } = job;
+    const jobFn = this.registry[jobtype];
+
+    if (!jobFn) {
+      const err = new Error(`No jobtype registered for: ${jobtype}`);
+      await this.client.fail(jid, err);
+      throw err;
+    }
+
+    return await this.execute(jobFn, job);
   }
 
   log(msg) {
@@ -124,9 +133,14 @@ module.exports = class Manager {
     console.log(`${new Date().toJSON()} wid=${wid} pid=${pid} ${msg}`)
   }
 
+  startHeartbeat() {
+    this.hearbeat = setInterval(() => this.client.beat(), 15000);
+  }
+
   async run() {
     this.trapSignals();
     await this.client.connect();
+    this.startHeartbeat();
     this.log(`Connected to server`);
     this.loop();
   }
