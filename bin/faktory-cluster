@@ -1,0 +1,18 @@
+#!/usr/bin/env node
+
+const cluster = require('cluster');
+const workers = Number(process.argv[2]) || require('os').cpus().length;
+const faktory = require('../');
+const program = require('../lib/cli');
+
+if (cluster.isMaster) {
+  for (let i = 0; i < workers; i++) {
+    cluster.fork();
+  }
+
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`worker ${worker.process.pid} died`);
+  });
+} else {
+  faktory.work(program);
+}

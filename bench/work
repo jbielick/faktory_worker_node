@@ -8,7 +8,7 @@ const concurrency = Number(process.argv[2]);
   let completed = 0;
   const time = process.hrtime();
 
-  faktory.register('MyJob', async () => {
+  const finish = () => {
     completed += 1;
     if (completed === 30000) {
       const diff = process.hrtime(time);
@@ -25,8 +25,12 @@ Jobs/s: ${Math.round(completed / duration, 2)}
 `);
       process.exit(0);
     }
+  };
+
+  faktory.register('MyJob', async () => {
+    finish();
   });
 
-  await faktory.work({ concurrency });
+  const manager = await faktory.work({ concurrency });
 
 })();
