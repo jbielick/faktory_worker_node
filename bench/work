@@ -1,52 +1,29 @@
 #!/usr/bin/env node
 
 const faktory = require('../');
-const blocked = require('blocked');
 const concurrency = Number(process.argv[2]);
 
-blocked((ms) => {
-  console.error(`Event loop blocked ${ms}`);
-}, { threshold: 10 });
-
 (async () => {
-
-  const client = await faktory.connect();
-
-  await client.flush();
-
-  const pushes = [];
-
-  for (var i = 5000; i > 0; i--) {
-    pushes.push(
-      client.push({
-        jobtype: 'MyJob',
-        args: [1, { message: 'hello' }]
-      })
-    );
-  }
-
-  await Promise.all(pushes);
-  await client.close();
 
   let completed = 0;
   const time = process.hrtime();
 
   faktory.register('MyJob', async () => {
     completed += 1;
-    if (completed === pushes.length) {
+    if (completed === 30000) {
       const diff = process.hrtime(time);
       const duration = diff[0] + (diff[1] / 1e9);
 
       console.log(`
 Benchmark Results:
 
-Jobs queued: ${pushes.length}
 Jobs processed: ${completed}
 Concurrency: ${concurrency}
 
 Duration: ${duration}s
 Jobs/s: ${Math.round(completed / duration, 2)}
 `);
+      process.exit(0);
     }
   });
 

@@ -1,0 +1,33 @@
+#!/usr/bin/env node
+
+const faktory = require('../');
+const n = Number(process.argv[2] || 30000);
+
+(async () => {
+
+  const client = await faktory.connect();
+
+  const pushes = [];
+  const time = process.hrtime();
+
+  for (var i = n; i > 0; i--) {
+    pushes.push(
+      client.push({
+        jobtype: 'MyJob',
+        args: [1, 'string', 3]
+      })
+    );
+  }
+
+  await Promise.all(pushes);
+
+  const diff = process.hrtime(time);
+  const duration = diff[0] + (diff[1] / 1e9);
+
+  console.log(`
+pushed: ${pushes.length} duration: ${duration}s jobs/s: ${Math.round(n / duration, 2)}
+`);
+
+  await client.close();
+
+})();
