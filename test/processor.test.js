@@ -7,7 +7,7 @@ const {
   queueName,
   withConnection: connect
 } = require('faktory-client/test/support/helper');
-const Manager = require('../lib/manager');
+const Processor = require('../lib/processor');
 
 test.before(async () => {
   await spawnFaktory();
@@ -32,31 +32,31 @@ test.cb('works with args', (t) => {
     });
   });
 
-  const manager = create({
+  const processor = create({
     queues: [queue],
     registry: {
       [jobtype]: createJobFn(t)
     }
   });
 
-  manager.run();
-  manager.client.socket.unref();
+  processor.run();
+  processor.client.socket.unref();
 });
 
 test('takes queues as array or string', (t) => {
-  let manager;
+  let processor;
 
-  manager = create({
+  processor = create({
     queues: 'test'
   });
 
-  t.deepEqual(manager.queues, ['test']);
+  t.deepEqual(processor.queues, ['test']);
 
-  manager = create({
+  processor = create({
     queues: ['test']
   });
 
-  t.deepEqual(manager.queues, ['test']);
+  t.deepEqual(processor.queues, ['test']);
 });
 
 test.cb('works with args and job thunk', (t) => {
@@ -70,25 +70,25 @@ test.cb('works with args and job thunk', (t) => {
     });
   });
 
-  const manager = create({
+  const processor = create({
     registry: {
       [jobtype]: createJobWithThunkFn(t)
     }
   });
 
-  manager.run();
-  manager.client.socket.unref();
+  processor.run();
+  processor.client.socket.unref();
 });
 
 test('FAILs and throws when no job is registered', async (t) => {
-  const manager = create();
+  const processor = create();
   const jid = 'wellhello';
 
-  manager.client.fail = (failed_jid, e) => {
+  processor.client.fail = (failed_jid, e) => {
     t.is(failed_jid, jid);
   };
 
-  await t.throws(manager.dispatch({
+  await t.throws(processor.dispatch({
     jid,
     jobtype: 'NonExistant'
   }), );
@@ -96,7 +96,7 @@ test('FAILs and throws when no job is registered', async (t) => {
 
 test('FAILs and throws when the job throws during perform', async (t) => {
   const jobtype = 'FailingJob';
-  const manager = create({
+  const processor = create({
     registry: {
       [jobtype]: () => { throw new Error('always fails') }
     }
@@ -104,23 +104,23 @@ test('FAILs and throws when the job throws during perform', async (t) => {
 
   const jid = 'wellhello';
 
-  manager.client.fail = (failed_jid, e) => {
+  processor.client.fail = (failed_jid, e) => {
     t.is(failed_jid, jid);
   };
 
   await t.throws(
-    manager.dispatch({ jid, jobtype, args: [] }),
+    processor.dispatch({ jid, jobtype, args: [] }),
     /always fails/,
     'throws the proper error'
   );
 });
 
 test('stop shuts job processing down', async (t) => {
-  const manager = create({
+  const processor = create({
     queues: ['nonexist']
   });
-  await manager.run();
-  await manager.stop();
+  await processor.run();
+  await processor.stop();
   t.pass();
 });
 
@@ -129,21 +129,21 @@ test('sleep sleeps', async (t) => {
   setTimeout(() => {
     pass = true;
   }, 2);
-  await Manager.sleep(5);
+  await Processor.sleep(5);
   if (pass) {
     t.pass('slept');
   }
 });
 
 test.skip('shuts down gracefully SIGINT', async (t) => {
-  const manager = create();
-  await manager.run();
+  const processor = create();
+  await processor.run();
   // process.kill(process.pid, 'SIGINT');
   t.pass();
 });
 
 function create(opts) {
-  return new Manager(opts);
+  return new Processor(opts);
 }
 
 process.on('exit', () => {
