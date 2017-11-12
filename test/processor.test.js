@@ -148,22 +148,6 @@ test('executes async jobfn and async thunk', async t => {
   });
 });
 
-test('.dispatch returns the jobfn from the registry', async t => {
-  const fn = () => {};
-  const jobtype = 'TestJob';
-  const processor = create({
-    registry: {
-      [jobtype]: fn
-    }
-  });
-
-  t.is(
-    await processor.dispatch({ jobtype }),
-    fn,
-    'dispatch did not return jobfn'
-  );
-});
-
 test('.dispatch FAILs and throws when no job is registered', async t => {
   const processor = create();
   const jid = 'wellhello';

@@ -25,7 +25,7 @@ test('.quiet sends processors QUIET', async t => {
   })
 });
 
-test('.busy reports jobs in progress', async t => {
+test('.busy reports progressors currently working', async t => {
   const { queue, jobtype } = await push();
 
   await new Promise((resolve) => {
