@@ -1354,9 +1354,9 @@ extsprintf@1.3.0, extsprintf@^1.2.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/extsprintf/-/extsprintf-1.3.0.tgz#96918440e3041a7a414f8c52e3c574eb3c3e1e05"
 
-faktory-client@^0.3.1:
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/faktory-client/-/faktory-client-0.3.1.tgz#de1ede479b73785c776282df73dbf8519aa2c7d7"
+faktory-client@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/faktory-client/-/faktory-client-0.4.0.tgz#6cc47b135f5c6fa946fd34b841d329a030976304"
   dependencies:
     debug "^3.1.0"
     redis-parser "^3.0.0"
