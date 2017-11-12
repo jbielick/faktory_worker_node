@@ -27,7 +27,7 @@ To process background jobs, follow these steps:
 
 To stop the process, send the TERM or INT signal.
 
-Pushing Jobs:
+#### Pushing Jobs:
 
 A job is a payload of keys and values according to [the faktory job payload specification](https://github.com/contribsys/faktory/wiki/The-Job-Payload). Any keys provided will be passed to the faktory server during PUSH. A `jid` (uuid) is created automatically for your job when using this library. See [the spec](https://github.com/contribsys/faktory/wiki/The-Job-Payload) for more options and defaults.
 
@@ -43,7 +43,7 @@ client.push({
 });
 ```
 
-Processing Jobs:
+#### Processing Jobs:
 
 A job function can be a sync or async function. Simply return a promise or use `await` in your async function to perform async tasks during your job. If you return early or don't `await` properly, the job will be ACKed when the function returns.
 
