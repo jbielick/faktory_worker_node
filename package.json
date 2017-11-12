@@ -27,7 +27,6 @@
     "faktory-worker": "bin/faktory-worker"
   },
   "ava": {
-    "concurrency": 1,
     "verbose": true,
     "timeout": "10s"
   },

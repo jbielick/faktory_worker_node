@@ -1,3 +1,6 @@
 {
-  "extends": "./node_modules/faktory-client/.eslintrc"
+  "extends": "./node_modules/faktory-client/.eslintrc",
+  "rules": {
+    "no-await-in-loop": 0
+  }
 }

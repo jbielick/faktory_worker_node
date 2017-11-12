@@ -1,4 +1,3 @@
-require('./helper');
 const test = require('ava');
 const {
   createJob,

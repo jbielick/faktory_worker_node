@@ -5,5 +5,15 @@ node_js:
   - 8
 services:
   - docker
+before_script:
+  - docker run --detach -p 7419:7419 contribsys/faktory:0.6.0 -b :7419
+  - |
+    until nc -z -v -w30 127.0.0.1 7419
+    do
+      sleep 1
+    done
+script:
+  - npm run lint
+  - npm test
 after_success:
   - './node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls'
