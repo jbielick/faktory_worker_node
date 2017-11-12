@@ -45,24 +45,54 @@ test('.busy reports progressors currently working', async t => {
 test('.stop allows in-progress jobs to finish', async t => {
   const { queue, jobtype } = await push();
 
-  await new Promise((resolve) => {
+  await new Promise(async (resolve) => {
     const manager = create({
       concurrency: 1,
       queues: [queue],
-      shutdownTimeout: 100,
+      timeout: 250,
       registry: {
         [jobtype]: async () => {
-          await sleep(50);
-          t.pass();
+          manager.stop();
+          manager.processors[0].ack = () => {
+            // job should be ackd even after the manager
+            // is given a .stop() command to drain the pool
+            t.falsy(manager.pool._draining);
+          }
+          await sleep(100);
           resolve();
         }
       }
     });
 
     manager.run();
-    setTimeout(() => {
-      manager.stop();
-    }, 10);
+  });
+});
+
+test('manager drains pool after stop timeout', async t => {
+  const { queue, jobtype } = await push();
+  t.plan(2);
+
+  await new Promise(async (resolve) => {
+    const manager = create({
+      concurrency: 1,
+      queues: [queue],
+      timeout: 50,
+      registry: {
+        [jobtype]: async () => {
+          manager.stop();
+          manager.processors[0].ack = () => {
+            // processor will try to ack, but the pool
+            // will be draining and throw an error.
+            t.truthy(true);
+          }
+          await sleep(100);
+          t.truthy(manager.pool._draining);
+          resolve();
+        }
+      }
+    });
+
+    manager.run();
   });
 });
 
