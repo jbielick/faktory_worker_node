@@ -175,10 +175,7 @@ test('.dispatch FAILs and throws when no job is registered', async t => {
     called = true;
   };
 
-  await t.throws(processor.dispatch({
-    jid,
-    jobtype: 'NonExistant'
-  }));
+  await processor.dispatch({ jid, jobtype: 'NonExistant' });
   t.truthy(called, '.fail not called for jid');
 });
 
@@ -194,11 +191,10 @@ test('.execute FAILs and throws when the job throws during execution', async t =
     called = true;
   };
 
-  await t.throws(
-    processor.execute(() => { throw new Error('always fails') }, { jid, jobtype, args: [] }),
-    /always fails/,
-    'throws the proper error'
-  );
+  await processor.execute(
+    () => { throw new Error('always fails') },
+    { jid, jobtype, args: [] }
+  ),
   t.truthy(called, '.fail not called for jid');
 });
 

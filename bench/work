@@ -14,15 +14,7 @@ const concurrency = Number(process.argv[2]);
       const diff = process.hrtime(time);
       const duration = diff[0] + (diff[1] / 1e9);
 
-      console.log(`
-Benchmark Results:
-
-Jobs processed: ${completed}
-Concurrency: ${concurrency}
-
-Duration: ${duration}s
-Jobs/s: ${Math.round(completed / duration, 2)}
-`);
+      console.log(`processed: ${completed} concurrency: ${manager.concurrency} duration: ${duration}s jobs/s: ${Math.round(completed / duration, 2)}`);
       process.exit(0);
     }
   };
