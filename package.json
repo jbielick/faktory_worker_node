@@ -45,7 +45,7 @@
     "blocked": "^1.2.1",
     "commander": "^2.11.0",
     "debug": "^3.1.0",
-    "faktory-client": "^0.4.0",
+    "faktory-client": "^0.4.2",
     "generic-pool": "^3.2.0",
     "uuid": "^3.1.0"
   }
