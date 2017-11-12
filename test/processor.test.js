@@ -1,10 +1,6 @@
 const test = require('ava');
-const {
-  createJob,
-  createClient,
-  queueName,
-  withConnection
-} = require('faktory-client/test/support/helper');
+const { sleep, push } = require('./helper');
+const { withConnection } = require('faktory-client/test/support/helper');
 const Processor = require('../lib/processor');
 
 test('takes queues as array or string', t => {
@@ -237,33 +233,3 @@ test('sleep sleeps', async t => {
 function create(opts) {
   return new Processor(Object.assign({ withConnection }, opts));
 }
-
-function sleep(ms, value = true) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => resolve(value), ms);
-  });
-}
-
-function createJobWithThunkFn(t) {
-  return (...args) => async (job) => {
-    t.truthy(job.created_at, 'raw job object is provided');
-    t.is(await sleep(1, 'slept'), 'slept', 'awaits promises');
-    t.deepEqual(args, [1, 2, 'three'], 'arguments are correct');
-    t.end();
-    return true;
-  }
-}
-
-async function push(opts = {}) {
-  const queue = opts.queue || queueName();
-  const jobtype = 'TestJob';
-  const args = opts.args || [];
-  const jid = await withConnection((client) => {
-    return client.push({
-      jobtype,
-      queue,
-      args
-    });
-  });
-  return { queue, jobtype, args, jid };
-};

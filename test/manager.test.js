@@ -1,11 +1,8 @@
 const test = require('ava');
+const { sleep, push } = require('./helper');
 const {
-  createJob,
-  createClient,
-  queueName,
   withConnection: connect
 } = require('faktory-client/test/support/helper');
-
 const Manager = require('../lib/manager');
 
 test('creates processor pool size of concurrency', t => {
@@ -71,22 +68,4 @@ test('.stop allows in-progress jobs to finish', async t => {
 
 function create(...args) {
   return new Manager(...args);
-}
-
-async function push(opts = {}) {
-  const queue = opts.queue || queueName();
-  const jobtype = 'TestJob';
-  const args = opts.args || [];
-  await connect(async (client) => {
-    await client.push({
-      jobtype,
-      queue,
-      args
-    });
-  });
-  return { queue, jobtype, args };
-};
-
-function sleep(ms, value = true) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
