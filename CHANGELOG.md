@@ -1,3 +1,8 @@
+0.5.0 | 2017-11-11
+---
+
+ * Shuffle the queues array to prevent queue starvation
+
 0.4.1 | 2017-11-11
 ---
 
