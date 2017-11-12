@@ -1,130 +1,250 @@
+require('./helper');
 const test = require('ava');
 const {
-  spawnFaktory,
-  shutdownFaktory,
   createJob,
   createClient,
   queueName,
-  withConnection: connect
+  withConnection
 } = require('faktory-client/test/support/helper');
 const Processor = require('../lib/processor');
 
-test.before(async () => {
-  await spawnFaktory();
-});
-
-test.after.always(async () => {
-  await connect(async (client) => {
-    await client.flush();
-  });
-  shutdownFaktory();
-});
-
-test.cb('works with args', (t) => {
-  const jobtype = 'MyDoWorkJob';
-  const queue = queueName();
-
-  connect(async (client) => {
-    client.push({
-      jobtype,
-      queue,
-      args: [1, 2, 'three']
-    });
-  });
-
-  const processor = create({
-    queues: [queue],
-    registry: {
-      [jobtype]: createJobFn(t)
-    }
-  });
-
-  processor.run();
-  processor.client.socket.unref();
-});
-
-test('takes queues as array or string', (t) => {
+test('takes queues as array or string', t => {
   let processor;
 
   processor = create({
     queues: 'test'
   });
 
-  t.deepEqual(processor.queues, ['test']);
+  t.deepEqual(processor.queues, ['test'], 'queue passed as string does not yield array');
 
   processor = create({
     queues: ['test']
   });
 
-  t.deepEqual(processor.queues, ['test']);
+  t.deepEqual(processor.queues, ['test'], 'queues passed as array does not yield array');
 });
 
-test.cb('works with args and job thunk', (t) => {
-  const jobtype = 'MyDoWorkJob2';
+test('passes args to jobfn', async t => {
+  let called = false;
+  const args = [1, 2, 'three'];
+  const { queue, jobtype } = await push({ args });
 
-  connect(async (client) => {
-    client.push({
-      jobtype,
-      queue: 'default',
-      args: [1, 2, 'three']
+  await new Promise((resolve) => {
+    const processor = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: (...args) => {
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
     });
-  });
 
+    processor.start();
+  });
+});
+
+test('await async jobfns', async t => {
+  let called = false;
+  const args = [1, 2, 'three'];
+  const { queue, jobtype } = await push({ args });
+
+  await new Promise((resolve) => {
+    const processor = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: async (...args) => {
+          await sleep(1);
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    processor.start();
+  });
+});
+
+test('executes sync jobfn and sync thunk', async t => {
+  let called = false;
+  const args = [1, 2, 'three'];
+  const { queue, jobtype, jid } = await push({ args });
+
+  await new Promise((resolve) => {
+    const processor = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: (...args) => (job) => {
+          t.is(job.jid, jid, 'jid does not match');
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    processor.start();
+  });
+});
+
+test('executes sync jobfn and async thunk', async t => {
+  let called = false;
+  const args = [1, 2, 'three'];
+  const { queue, jobtype, jid } = await push({ args });
+
+  await new Promise((resolve) => {
+    const processor = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: (...args) => async (job) => {
+          await sleep(1);
+          t.is(job.jid, jid, 'jid does not match');
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    processor.start();
+  });
+});
+
+test('executes async jobfn and sync thunk', async t => {
+  const args = [1, 2, 'three'];
+  const { queue, jobtype, jid } = await push({ args });
+
+  await new Promise((resolve) => {
+    const processor = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: async (...args) => (job) => {
+          t.is(job.jid, jid, 'jid does not match');
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    processor.start();
+  });
+});
+
+test('executes async jobfn and async thunk', async t => {
+  const args = [1, 2, 'three'];
+  const { queue, jobtype, jid } = await push({ args });
+
+  await new Promise((resolve) => {
+    const processor = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: async (...args) => async (job) => {
+          await sleep(1);
+          t.is(job.jid, jid, 'jid does not match');
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    processor.start();
+  });
+});
+
+test('.dispatch returns the jobfn from the registry', async t => {
+  const fn = () => {};
+  const jobtype = 'TestJob';
   const processor = create({
     registry: {
-      [jobtype]: createJobWithThunkFn(t)
+      [jobtype]: fn
     }
   });
 
-  processor.run();
-  processor.client.socket.unref();
+  t.is(
+    await processor.dispatch({ jobtype }),
+    fn,
+    'dispatch did not return jobfn'
+  );
 });
 
-test('FAILs and throws when no job is registered', async (t) => {
+test('.dispatch FAILs and throws when no job is registered', async t => {
   const processor = create();
   const jid = 'wellhello';
+  let called = false;
 
-  processor.client.fail = (failed_jid, e) => {
+  processor.fail = (failed_jid, e) => {
     t.is(failed_jid, jid);
+    called = true;
   };
 
   await t.throws(processor.dispatch({
     jid,
     jobtype: 'NonExistant'
-  }), );
+  }));
+  t.truthy(called, '.fail not called for jid');
 });
 
-test('FAILs and throws when the job throws during perform', async (t) => {
+test('.execute FAILs and throws when the job throws during execution', async t => {
   const jobtype = 'FailingJob';
-  const processor = create({
-    registry: {
-      [jobtype]: () => { throw new Error('always fails') }
-    }
-  });
+  const processor = create({ registry: {} });
+  let called = false;
 
   const jid = 'wellhello';
 
-  processor.client.fail = (failed_jid, e) => {
-    t.is(failed_jid, jid);
+  processor.fail = (failedJid, e) => {
+    t.is(failedJid, jid);
+    called = true;
   };
 
   await t.throws(
-    processor.dispatch({ jid, jobtype, args: [] }),
+    processor.execute(() => { throw new Error('always fails') }, { jid, jobtype, args: [] }),
     /always fails/,
     'throws the proper error'
   );
+  t.truthy(called, '.fail not called for jid');
 });
 
-test('stop shuts job processing down', async (t) => {
-  const processor = create({
-    queues: ['nonexist']
+test('.stop awaits in-progress job', async t => {
+  const { queue, jobtype } = await push();
+
+  const stop = await new Promise((resolve, reject) => {
+    const processor = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: async (...args) => {
+          resolve(async () => processor.stop());
+          await sleep(50);
+          t.pass();
+        }
+      }
+    });
+
+    processor.start();
   });
-  await processor.run();
-  await processor.stop();
-  t.pass();
+  await stop();
 });
 
-test('sleep sleeps', async (t) => {
+test('.stop breaks the work loop', async t => {
+  let called = 0;
+  const { queue, jobtype } = await push();
+  await push({ queue, jobtype });
+
+  const stop = await new Promise((resolve, reject) => {
+    const processor = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: async (...args) => {
+          resolve(async () => processor.stop());
+          called += 1;
+        }
+      }
+    });
+
+    processor.start();
+  });
+  await stop();
+  t.is(called, 1, 'continued fetching after .stop');
+});
+
+test('sleep sleeps', async t => {
   let pass = false;
   setTimeout(() => {
     pass = true;
@@ -135,33 +255,14 @@ test('sleep sleeps', async (t) => {
   }
 });
 
-test.skip('shuts down gracefully SIGINT', async (t) => {
-  const processor = create();
-  await processor.run();
-  // process.kill(process.pid, 'SIGINT');
-  t.pass();
-});
-
 function create(opts) {
-  return new Processor(opts);
+  return new Processor(Object.assign({ withConnection }, opts));
 }
-
-process.on('exit', () => {
-  shutdownFaktory();
-});
 
 function sleep(ms, value = true) {
   return new Promise((resolve, reject) => {
     setTimeout(() => resolve(value), ms);
   });
-}
-
-function createJobFn(t) {
-  return async (...args) => {
-    t.is(await sleep(1, 'slept'), 'slept', 'awaits promises');
-    t.deepEqual(args, [1, 2, 'three'], 'arguments are correct');
-    t.end();
-  }
 }
 
 function createJobWithThunkFn(t) {
@@ -173,3 +274,17 @@ function createJobWithThunkFn(t) {
     return true;
   }
 }
+
+async function push(opts = {}) {
+  const queue = opts.queue || queueName();
+  const jobtype = 'TestJob';
+  const args = opts.args || [];
+  const jid = await withConnection((client) => {
+    return client.push({
+      jobtype,
+      queue,
+      args
+    });
+  });
+  return { queue, jobtype, args, jid };
+};

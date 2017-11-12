@@ -27,6 +27,7 @@
     "faktory-worker": "bin/faktory-worker"
   },
   "ava": {
+    "concurrency": 1,
     "verbose": true,
     "timeout": "10s"
   },
@@ -44,6 +45,7 @@
     "blocked": "^1.2.1",
     "commander": "^2.11.0",
     "debug": "^3.1.0",
-    "faktory-client": "^0.2.2"
+    "faktory-client": "^0.3.1",
+    "generic-pool": "^3.2.0"
   }
 }

@@ -1354,9 +1354,9 @@ extsprintf@1.3.0, extsprintf@^1.2.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/extsprintf/-/extsprintf-1.3.0.tgz#96918440e3041a7a414f8c52e3c574eb3c3e1e05"
 
-faktory-client@^0.2.2:
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/faktory-client/-/faktory-client-0.2.2.tgz#8f607e6d6d01d1a8505c589fe406d92c661ec272"
+faktory-client@^0.3.1:
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/faktory-client/-/faktory-client-0.3.1.tgz#de1ede479b73785c776282df73dbf8519aa2c7d7"
   dependencies:
     debug "^3.1.0"
     redis-parser "^3.0.0"
@@ -1536,6 +1536,10 @@ gauge@~2.7.3:
     string-width "^1.0.1"
     strip-ansi "^3.0.1"
     wide-align "^1.1.0"
+
+generic-pool@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/generic-pool/-/generic-pool-3.2.0.tgz#c1d485ecbd6f18c0513d4741d098a6715eaeeca8"
 
 get-caller-file@^1.0.1:
   version "1.0.2"
