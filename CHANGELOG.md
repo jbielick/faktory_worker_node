@@ -1,3 +1,13 @@
+0.6.0 | 2017-11-12
+---
+
+ * Upgrade faktory-client for faktory protocol version 2
+ * BUGFIX: don't try to execute jobs that aren't dispatched
+ * Interpret heartbeat response for quiet|terminate
+ * Fix race condition in which graceful shutdown drains the pool too early and prevents the processor from ACKing of FAILing a job
+ * Heartbeat now occurs only for the manager, not for every processor and connection in the pool.
+ * Tests now run in parallel; faktory is not spawned by node. The faktory server must be started before running the tests. Use bin/server for convenience.
+
 0.5.0 | 2017-11-11
 ---
 

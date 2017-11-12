@@ -29,6 +29,8 @@ To stop the process, send the TERM or INT signal.
 
 Pushing Jobs:
 
+A job is a payload of keys and values according to [the faktory job payload specification](https://github.com/contribsys/faktory/wiki/The-Job-Payload). Any keys provided will be passed to the faktory server during PUSH. A `jid` (uuid) is created automatically for your job when using this library. See [the spec](https://github.com/contribsys/faktory/wiki/The-Job-Payload) for more options and defaults.
+
 ```js
 const faktory = require('faktory-worker');
 
@@ -42,6 +44,8 @@ client.push({
 ```
 
 Processing Jobs:
+
+A job function can be a sync or async function. Simply return a promise or use `await` in your async function to perform async tasks during your job. If you return early or don't `await` properly, the job will be ACKed when the function returns.
 
 ```js
 const faktory = require('faktory-worker');
@@ -65,6 +69,19 @@ use FAKTORY_PROVIDER to specify the environment variable which does
 contain the URL: FAKTORY_PROVIDER=FAKTORYTOGO_URL.  This level of
 indirection is useful for SaaSes, Heroku Addons, etc.
 
+* How do I access the job payload itself?
+
+You can register your job function with `faktory.register()` and provide a thunk. The registered function always receives the job `args` and if you return a function, that function will be called and provided the raw `job` payload, where you can access custom props and other meta.
+
+```js
+faktory.register('JobWithHeaders', (...args) => async (job) => {
+  // job args available as `args`
+  // use job custom properties
+  await sendEmail({ locale: job.custom.locale });
+  log(job.custom.txid);
+});
+```
+
 See the [Faktory client for other languages](https://github.com/contribsys/faktory/wiki/Related-Projects)
 
 You can implement a Faktory client in any programming langauge.
@@ -72,8 +89,9 @@ See [the wiki](https://github.com/contribsys/faktory/wiki) for details.
 
 ## TODO
 
- - [ ] TLS
  - [ ] Middleware
+ - [ ] Handle signals from server heartbeat response
+ - [ ] Require jobs from folder and automatically register
  - [x] CLI
  - [x] Heartbeat
  - [x] Tests
