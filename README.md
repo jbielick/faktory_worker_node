@@ -71,9 +71,8 @@ See [the wiki](https://github.com/contribsys/faktory/wiki) for details.
 
  - [ ] TLS
  - [ ] Middleware
- - [ ] CLI API
- - [ ] Retries
- - [ ] Heartbeat
+ - [x] CLI
+ - [x] Heartbeat
  - [x] Tests
  - [x] Authentication
  - [x] Fail jobs
