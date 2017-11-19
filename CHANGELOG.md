@@ -1,3 +1,18 @@
+0.6.3 | 2017-11-19
+---
+
+ * Allow jobs to reject and FAIL with a string or undefined (without an error object). [#2](https://github.com/jbielick/faktory_worker_node/issues/2)
+
+0.6.2 | 2017-11-12
+---
+
+ * Upgrade faktory-client to `v0.4.2`
+
+0.6.1 | 2017-11-12
+---
+
+ * Check job timeout completion more frequently
+
 0.6.0 | 2017-11-12
 ---
 
