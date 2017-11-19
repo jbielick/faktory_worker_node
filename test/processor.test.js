@@ -158,7 +158,7 @@ test('.dispatch FAILs and throws when no job is registered', async t => {
   t.truthy(called, '.fail not called for jid');
 });
 
-test('.execute FAILs and throws when the job throws during execution', async t => {
+test('.execute FAILs and throws when the job throws (sync) during execution', async t => {
   const jobtype = 'FailingJob';
   const processor = create({ registry: {} });
   let called = false;
@@ -167,11 +167,58 @@ test('.execute FAILs and throws when the job throws during execution', async t =
 
   processor.fail = (failedJid, e) => {
     t.is(failedJid, jid);
+    t.truthy(e instanceof Error);
+    t.truthy(/always fails/.test(e.message));
     called = true;
   };
 
   await processor.execute(
     () => { throw new Error('always fails') },
+    { jid, jobtype, args: [] }
+  ),
+  t.truthy(called, '.fail not called for jid');
+});
+
+// #2
+test('.execute FAILs and throws when the job rejects (async) during execution', async t => {
+  const jobtype = 'RejectedJob';
+  const processor = create({ registry: {} });
+  let called = false;
+
+  const jid = 'wellhello';
+
+  processor.fail = (failedJid, e) => {
+    t.is(failedJid, jid);
+    t.truthy(e instanceof Error);
+    t.truthy(/rejected promise/.test(e.message));
+    called = true;
+  };
+
+  await processor.execute(
+    async () => { throw new Error('rejected promise') },
+    { jid, jobtype, args: [] }
+  ),
+  t.truthy(called, '.fail not called for jid');
+});
+
+// #2
+test('.execute FAILs when the job returns a rejected promise with no error', async t => {
+  const jobtype = 'RejectedJob';
+  const processor = create({ registry: {} });
+  let called = false;
+
+  const jid = 'wellhello';
+
+  processor.fail = (failedJid, e) => {
+    t.is(failedJid, jid);
+    t.truthy(e instanceof Error);
+    console.log(e.message);
+    t.truthy(/no error or message/i.test(e.message));
+    called = true;
+  };
+
+  await processor.execute(
+    async () => Promise.reject(),
     { jid, jobtype, args: [] }
   ),
   t.truthy(called, '.fail not called for jid');
