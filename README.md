@@ -84,7 +84,7 @@ faktory.register('JobWithHeaders', (...args) => async (job) => {
 
 See the [Faktory client for other languages](https://github.com/contribsys/faktory/wiki/Related-Projects)
 
-You can implement a Faktory client in any programming langauge.
+You can implement a Faktory client in any programming language.
 See [the wiki](https://github.com/contribsys/faktory/wiki) for details.
 
 ## TODO
