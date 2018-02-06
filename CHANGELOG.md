@@ -1,3 +1,11 @@
+0.7.0 | 2018-02-05
+---
+
+ * Upgrade faktory-client to `v0.5.0`
+ * Run tests against faktory `v0.7.0`
+ * Allow `options.heartbeatInterval` override (default 15s)
+ * Gracefully reconnect when connections are interrupted / closed
+
 0.6.3 | 2017-11-19
 ---
 

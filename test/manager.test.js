@@ -96,6 +96,66 @@ test('manager drains pool after stop timeout', async t => {
   });
 });
 
+test('manager stops when SIGTERM', async t => {
+  t.plan(1);
+  const manager = create({concurrency: 1});
+
+  await manager.run();
+
+  const originalStop = manager.stop.bind(manager);
+  const promise = new Promise((resolve) => {
+    manager.stop = () => {
+      t.pass();
+      originalStop();
+      resolve();
+    };
+  });
+
+  process.kill(process.pid, 'SIGTERM');
+
+  return promise;
+});
+
+test('manager stops when SIGINT', async t => {
+  t.plan(1);
+  const manager = create({concurrency: 1});
+
+  await manager.run();
+
+  const originalStop = manager.stop.bind(manager);
+  const promise = new Promise((resolve) => {
+    manager.stop = () => {
+      t.pass();
+      originalStop();
+      resolve();
+    };
+  });
+
+  process.kill(process.pid, 'SIGINT');
+
+  return promise;
+});
+
+test('manager quiets when SIGTSTP', async t => {
+  t.plan(1);
+  const manager = create({concurrency: 1});
+
+  await manager.run();
+
+  const originalQuiet = manager.quiet.bind(manager);
+  const promise = new Promise((resolve) => {
+    manager.quiet = () => {
+      t.pass();
+      originalQuiet();
+      resolve();
+    };
+  });
+
+  process.kill(process.pid, 'SIGTSTP');
+
+  return promise;
+});
+
 function create(...args) {
   return new Manager(...args);
 }
