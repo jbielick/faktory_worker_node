@@ -1,5 +1,5 @@
 const test = require('ava');
-const { sleep, push } = require('./helper');
+const { sleep, push, mocked, mockServer } = require('./helper');
 const {
   withConnection: connect
 } = require('faktory-client/test/support/helper');
@@ -27,7 +27,6 @@ test('.busy reports progressors currently working', async t => {
 
   await new Promise((resolve) => {
     const manager = create({
-      concurrency: 1,
       queues: [queue],
       registry: {
         [jobtype]: async () => {
@@ -42,51 +41,42 @@ test('.busy reports progressors currently working', async t => {
   });
 });
 
-test('.stop allows in-progress jobs to finish', async t => {
+test('.stop() allows in-progress jobs to finish', async t => {
   const { queue, jobtype } = await push();
 
-  await new Promise(async (resolve) => {
+  const stop = await new Promise(async (resolve) => {
     const manager = create({
-      concurrency: 1,
+
       queues: [queue],
       timeout: 250,
       registry: {
         [jobtype]: async () => {
-          manager.stop();
-          manager.processors[0].ack = () => {
-            // job should be ackd even after the manager
-            // is given a .stop() command to drain the pool
-            t.falsy(manager.pool._draining);
-          }
+          resolve(async () => manager.stop());
           await sleep(100);
-          resolve();
+          t.pass();
         }
       }
     });
 
     manager.run();
   });
+  await stop();
 });
 
 test('manager drains pool after stop timeout', async t => {
   const { queue, jobtype } = await push();
-  t.plan(2);
 
   await new Promise(async (resolve) => {
     const manager = create({
-      concurrency: 1,
+
       queues: [queue],
       timeout: 50,
       registry: {
         [jobtype]: async () => {
           manager.stop();
-          manager.processors[0].ack = () => {
-            // processor will try to ack, but the pool
-            // will be draining and throw an error.
-            t.truthy(true);
-          }
           await sleep(100);
           t.truthy(manager.pool._draining);
+          t.pass();
           resolve();
         }
       }
@@ -98,7 +88,7 @@ test('manager drains pool after stop timeout', async t => {
 
 test('manager stops when SIGTERM', async t => {
   t.plan(1);
-  const manager = create({concurrency: 1});
+  const manager = create();
 
   await manager.run();
 
@@ -118,7 +108,7 @@ test('manager stops when SIGTERM', async t => {
 
 test('manager stops when SIGINT', async t => {
   t.plan(1);
-  const manager = create({concurrency: 1});
+  const manager = create();
 
   await manager.run();
 
@@ -138,7 +128,7 @@ test('manager stops when SIGINT', async t => {
 
 test('manager quiets when SIGTSTP', async t => {
   t.plan(1);
-  const manager = create({concurrency: 1});
+  const manager = create();
 
   await manager.run();
 
@@ -156,6 +146,48 @@ test('manager quiets when SIGTSTP', async t => {
   return promise;
 });
 
-function create(...args) {
-  return new Manager(...args);
+test('.run() resolves with a manager', async t => {
+  t.plan(1);
+  await mocked(async (server, port) => {
+    server
+      .on('BEAT', (msg, socket) => {
+        socket.write("+OK\r\n");
+      })
+      .on('FETCH', async (msg, socket) => {
+        await sleep(100);
+        socket.write("$-1\r\n");
+      });
+    const manager = create({ port, concurrency: 1 });
+    const resolved = await manager.run();
+    t.is(manager, resolved, '.run did not resolve with self');
+    await manager.stop();
+  });
+});
+
+test.skip('sends a hearbeat on heartbeatInterval', async t => {
+  const server = mockServer();
+  let beats = 0;
+  server.reply = async (msg) => {
+    if (/beat/i.test(msg)) {
+      beats += 1;
+      return "+OK\r\n";
+    } else if (/fetch/i.test(msg)) {
+      await sleep(100);
+      return "$-1\r\n";
+    }
+  };
+  server.listen(7444, '127.0.0.1');
+  const manager = create({heartbeatInterval: 20, port: 7444, concurrency: 1});
+
+  manager.startHeartbeat();
+  await sleep(60);
+
+  t.is(beats, 2);
+
+  await manager.stop();
+  server.close();
+});
+
+function create(options = {}) {
+  return new Manager(Object.assign({concurrency: 1}, options));
 }
