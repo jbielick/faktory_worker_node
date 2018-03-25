@@ -1,3 +1,9 @@
+0.8.0 | 2018-03-24
+---
+
+ * Upgrade faktory-client to `v0.6.0`
+ * FAKTORY_URL is parsed by URL lib—must contain protocol `tcp://` where it previously did not
+
 0.7.0 | 2018-02-05
 ---
 
