@@ -18,18 +18,7 @@ npm install faktory-worker
 
 ## Usage
 
-To process background jobs, follow these steps:
-
-1. Push a job to faktory server
-2. Register your jobs and their associated functions
-3. Set a few optional parameters
-4. Start working
-
-To stop the process, send the TERM or INT signal.
-
-#### Pushing Jobs:
-
-A job is a payload of keys and values according to [the faktory job payload specification](https://github.com/contribsys/faktory/wiki/The-Job-Payload). Any keys provided will be passed to the faktory server during PUSH. A `jid` (uuid) is created automatically for your job when using this library. See [the spec](https://github.com/contribsys/faktory/wiki/The-Job-Payload) for more options and defaults.
+### Pushing jobs
 
 ```js
 const faktory = require('faktory-worker');
@@ -37,61 +26,90 @@ const faktory = require('faktory-worker');
 const client = await faktory.connect();
 
 client.push({
-  queue: 'default', // `default` if omitted
   jobtype: 'MyDoWorkJob',
-  args: []
+  args: [3, 'small']
 });
 ```
 
-#### Processing Jobs:
+A job is a payload of keys and values according to [the faktory job payload specification](https://github.com/contribsys/faktory/wiki/The-Job-Payload). Any keys provided will be passed to the faktory server during `PUSH`. A `jid` (uuid) is created automatically for your job when using this library. See [the spec](https://github.com/contribsys/faktory/wiki/The-Job-Payload) for more options and defaults.
 
-A job function can be a sync or async function. Simply return a promise or use `await` in your async function to perform async tasks during your job. If you return early or don't `await` properly, the job will be ACKed when the function returns.
+### Processing jobs
 
 ```js
 const faktory = require('faktory-worker');
 
-faktory.register('MyDoWorkJob', async (id, size) => {
-  await somethingAsync(id);
-  // job will automatically be ack'd if it does not error
+faktory.register('MyJob', async (id, size) => {
+  const img = await Image.find(id);
+  await resize(img.blob, size);
 });
 
-// starts the work loop and waits for signals
-faktory.work();
+await faktory.work();
 ```
+
+A job function can be a sync or async function. Simply return a promise or use `await` in your async function to perform async tasks during your job. If you return early or don't `await` properly, the job will be `ACK`ed when the function returns.
+
+`faktory.work()` traps `INT` and `TERM` signals so that it can gracefully shut down and finish any in-progress jobs before the `options.timeout` is reached.
+
+### Middleware
+
+```js
+const faktory = require('faktory');
+
+faktory.use(async (ctx, next) => {
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+  console.log(`${ctx.job.jobtype} took ${ms}ms`);
+});
+
+await faktory.work();
+```
+
+Faktory middleware works just like [`koa`](https://github.com/koajs/koa) middleware. You can register a middleware function (async or sync) with `.use`. Middleware is called for every job that is performed. Always return a promise, `await next()`, or `return next();` to allow execution to continue down the middleware chain.
+
+### CLI
+
+`faktory-worker` comes with two helper scripts:
+
+`node_modules/.bin/faktory-work`
+
+Starts one worker. Use `--help` for more information.
+
+and
+
+`node_modules/.bin/faktory-cluster`
+
+### Debugging
+
+Use `DEBUG=faktory*` to see related debug log lines.
 
 ## FAQ
 
 * How do I specify the Faktory server location?
 
-By default, it will use localhost:7419 which is sufficient for local development.
-Use FAKTORY_URL to specify the URL, e.g. `faktory.example.com:12345` or
-use FAKTORY_PROVIDER to specify the environment variable which does
-contain the URL: FAKTORY_PROVIDER=FAKTORYTOGO_URL.  This level of
+By default, it will connect to `tcp://localhost:7419`.
+Use FAKTORY_URL to specify the URL, e.g. `tcp://faktory.example.com:12345` or use FAKTORY_PROVIDER to specify the environment variable which contains the URL: `FAKTORY_PROVIDER=FAKTORYTOGO_URL`.  This level of
 indirection is useful for SaaSes, Heroku Addons, etc.
 
-* How do I access the job payload itself?
+* How do I access the job payload in my function?
 
-You can register your job function with `faktory.register()` and provide a thunk. The registered function always receives the job `args` and if you return a function, that function will be called and provided the raw `job` payload, where you can access custom props and other meta.
+The function passed to `register` can be a thunk. The registered function will receive the job `args` and if that function returns a function, that returned function will be called and provided the raw `job` payload containing all custom props and other metadata of the job payload.
 
 ```js
 faktory.register('JobWithHeaders', (...args) => async (job) => {
-  // job args available as `args`
-  // use job custom properties
-  await sendEmail({ locale: job.custom.locale });
+  const [ email ] = args;
+  I18n.locale = job.custom.locale;
   log(job.custom.txid);
+  await sendEmail(email);
 });
 ```
 
-See the [Faktory client for other languages](https://github.com/contribsys/faktory/wiki/Related-Projects)
-
-You can implement a Faktory client in any programming language.
-See [the wiki](https://github.com/contribsys/faktory/wiki) for details.
-
 ## TODO
 
- - [ ] Middleware
  - [ ] Handle signals from server heartbeat response
  - [ ] Require jobs from folder and automatically register
+ - [ ] Logging
+ - [x] Middleware
  - [x] CLI
  - [x] Heartbeat
  - [x] Tests
