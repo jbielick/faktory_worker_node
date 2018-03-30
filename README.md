@@ -25,10 +25,12 @@ const faktory = require('faktory-worker');
 
 const client = await faktory.connect();
 
-client.push({
+const jid = await client.push({
   jobtype: 'MyDoWorkJob',
   args: [3, 'small']
 });
+
+await client.close();
 ```
 
 A job is a payload of keys and values according to [the faktory job payload specification](https://github.com/contribsys/faktory/wiki/The-Job-Payload). Any keys provided will be passed to the faktory server during `PUSH`. A `jid` (uuid) is created automatically for your job when using this library. See [the spec](https://github.com/contribsys/faktory/wiki/The-Job-Payload) for more options and defaults.
@@ -44,6 +46,7 @@ faktory.register('MyJob', async (id, size) => {
 });
 
 await faktory.work();
+// send INT signal to shutdown gracefully
 ```
 
 A job function can be a sync or async function. Simply return a promise or use `await` in your async function to perform async tasks during your job. If you return early or don't `await` properly, the job will be `ACK`ed when the function returns.
