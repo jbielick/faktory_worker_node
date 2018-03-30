@@ -45,7 +45,7 @@
   "dependencies": {
     "commander": "^2.11.0",
     "debug": "^3.1.0",
-    "faktory-client": "0.6.0",
+    "faktory-client": "^0.6.1",
     "generic-pool": "^3.4.2",
     "koa-compose": "^4.0.0",
     "uuid": "^3.1.0"
