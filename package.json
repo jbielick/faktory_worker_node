@@ -24,7 +24,7 @@
     "url": "https://github.com/jbielick/faktory_worker_node"
   },
   "bin": {
-    "faktory-work": "bin/faktory-worker",
+    "faktory-work": "bin/faktory-work",
     "faktory-cluster": "bin/faktory-cluster"
   },
   "ava": {

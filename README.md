@@ -40,7 +40,7 @@ A job is a payload of keys and values according to [the faktory job payload spec
 ```js
 const faktory = require('faktory-worker');
 
-faktory.register('MyJob', async (id, size) => {
+faktory.register('MyDoWorkJob', async (id, size) => {
   const img = await Image.find(id);
   await resize(img.blob, size);
 });
@@ -56,7 +56,7 @@ A job function can be a sync or async function. Simply return a promise or use `
 ### Middleware
 
 ```js
-const faktory = require('faktory');
+const faktory = require('faktory-worker');
 
 faktory.use(async (ctx, next) => {
   const start = Date.now();
