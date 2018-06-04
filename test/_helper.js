@@ -48,7 +48,7 @@ const mockServer = () => {
 const mocked = async (fn) => {
   const server = mockServer();
   i += 1;
-  const port = 7000 + i;
+  const port = Math.ceil(7000 + i + Math.random());
   server.listen(port, '127.0.0.1');
   try {
     return fn(server, port);
