@@ -1,7 +1,11 @@
 const test = require('ava');
-const { sleep, push, mocked } = require('./helper');
-const { withConnection: connect } = require('faktory-client/test/support/helper');
-const create = require('../lib/faktory');
+const {
+  withConnection: connect,
+  sleep,
+  push,
+  mocked
+} = require('./_helper');
+const create = require('../');
 
 test('.register() returns self', t => {
   const faktory = create();

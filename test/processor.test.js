@@ -1,6 +1,10 @@
 const test = require('ava');
-const { sleep, push, mockServer } = require('./helper');
-const { withConnection } = require('faktory-client/test/support/helper');
+const {
+  withConnection,
+  sleep,
+  push,
+  mockServer
+} = require('./_helper');
 const Processor = require('../lib/processor');
 
 test('takes queues as array or string', t => {

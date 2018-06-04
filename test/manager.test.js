@@ -1,8 +1,10 @@
 const test = require('ava');
-const { sleep, push, mocked, mockServer } = require('./helper');
 const {
-  withConnection: connect
-} = require('faktory-client/test/support/helper');
+  withConnection: connect,
+  sleep,
+  push,
+  mocked,
+  mockServer } = require('./_helper');
 const Manager = require('../lib/manager');
 
 test('creates processor pool size of concurrency', t => {
