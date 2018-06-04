@@ -1,3 +1,30 @@
+0.10.0 | 2018-06-04
+---
+
+ * moves `faktory-client` into this repo
+ * `require('faktory-worker/client')` export now available
+ * manager now respects faktory-server heartbeat signals (quiet, terminate) so buttons clicked in the UI will now quiet and terminate the faktory work process
+
+0.9.2 | 2018-06-04
+---
+
+ * fix incorrectly pathed faktory-work bin in package.json
+
+0.9.1 | 2018-03-30
+---
+
+ * Fixed issues where job payload attributes assumed to be defaulted by the faktory server were not being sent by the client. [The server does not default these](https://gitter.im/contribsys/faktory?at=5abe55f32b9dfdbc3a3bbafc) so now faktory-client defaults these values.
+
+0.9.0 | 2018-03-28
+---
+
+ * adds `faktory.use` to add middleware to the job execution stack (koa.js style)
+
+0.8.1 | 2018-03-26
+---
+
+ * bugfix: process.exit after graceful shutdown of manager
+
 0.8.0 | 2018-03-24
 ---
 
@@ -98,3 +125,42 @@
  * Tests for manager.js
  * add ava for tests, nyc for coverage
 
+## `faktory-client` (moved to this repo)
+
+0.6.0 | 2018-03-24
+---
+
+ * connection URL is now parsed by the [node URL module](https://nodejs.org/api/url.html#url_the_whatwg_url_api). The previous URL parsing did not allow protocols hints (tls) or passwords in the url. Because the URL lib is now used, a connection string without a protocol cannot be used. `localhost:7419` and the like will not work—please use `tcp://localhost:7419`
+
+0.5.0 | 2018-02-04
+---
+
+ * Refactor connection process: reconnect on close if not initial connection attempt
+ * Improve debug logging output
+ * Use assert module for response expectations
+ * Parse connection URLs better (allow tcp://)
+
+0.4.3 | 2017-11-12
+---
+
+ * Bugfix: in the rare case a response is dropped from the server, the code was using a variable that was not defined to log the dropped message.
+
+0.4.2 | 2017-11-12
+---
+
+ * Bugfix: server now sends NULL for fetch requests when queues are empty. The code attempted to use string methods on this, expecting that it was a buffer/string.
+
+0.4.1 | 2017-11-12
+---
+
+ * Test updates
+
+0.4.0 | 2017-11-12
+---
+
+ * Updates for faktory protocol verison 2 compatibility https://github.com/contribsys/faktory/pull/72
+
+### Breaking
+
+ * Must provide `wid` in construction if the client is going to heartbeat, otherwise it will error.
+ * .beat() now returns a string with either 'OK' or the `state` value 'quiet'|'terminate'
