@@ -1,6 +1,6 @@
 # faktory_worker_node
 
-[![Travis branch](https://img.shields.io/travis/jbielick/faktory_worker_node/master.svg)](https://travis-ci.org/jbielick/faktory-client)
+[![Travis branch](https://img.shields.io/travis/jbielick/faktory_worker_node/master.svg)](https://travis-ci.org/jbielick/faktory_worker_node)
 [![Coveralls github branch](https://img.shields.io/coveralls/github/jbielick/faktory_worker_node/master.svg)](https://coveralls.io/github/jbielick/faktory_worker_node)
 ![David](https://img.shields.io/david/jbielick/faktory_worker_node.svg)
 ![node](https://img.shields.io/node/v/faktory-worker.svg)
