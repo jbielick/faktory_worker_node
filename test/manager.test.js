@@ -7,6 +7,10 @@ const {
   mockServer } = require('./_helper');
 const Manager = require('../lib/manager');
 
+function create(options = {}) {
+  return new Manager(Object.assign({concurrency: 1}, options));
+}
+
 test('creates processor pool size of concurrency', t => {
   const concurrency = 10;
   const manager = create({ concurrency });
@@ -166,6 +170,61 @@ test('.run() resolves with a manager', async t => {
   });
 });
 
+test('quiets when the heartbeat response says so', async t => {
+  t.plan(1);
+  await mocked(async (server, port) => {
+    server
+      .on('BEAT', (msg, socket) => {
+        socket.write('$17\r\n{"state":"quiet"}\r\n');
+      })
+      .on('FETCH', async (msg, socket) => {
+        await sleep(100);
+        socket.write("$-1\r\n");
+      });
+    const manager = create({ port, concurrency: 1 });
+
+    const originalQuiet = manager.quiet.bind(manager);
+    const promise = new Promise((resolve) => {
+      manager.quiet = () => {
+        t.pass();
+        originalQuiet();
+        manager.stop();
+        resolve();
+      };
+    });
+
+    await manager.run();
+    await promise;
+  });
+});
+
+test('stops when the heartbeat response says so', async t => {
+  t.plan(1);
+  await mocked(async (server, port) => {
+    server
+      .on('BEAT', (msg, socket) => {
+        socket.write('$21\r\n{"state":"terminate"}\r\n');
+      })
+      .on('FETCH', async (msg, socket) => {
+        await sleep(100);
+        socket.write("$-1\r\n");
+      });
+    const manager = create({ port, concurrency: 1 });
+
+    const originalStop = manager.stop.bind(manager);
+    const promise = new Promise((resolve) => {
+      manager.stop = () => {
+        t.pass();
+        originalStop();
+        resolve();
+      };
+    });
+
+    await manager.run();
+    await promise;
+  });
+});
+
 test.skip('sends a hearbeat on heartbeatInterval', async t => {
   const server = mockServer();
   let beats = 0;
@@ -189,7 +248,3 @@ test.skip('sends a hearbeat on heartbeatInterval', async t => {
   await manager.stop();
   server.close();
 });
-
-function create(options = {}) {
-  return new Manager(Object.assign({concurrency: 1}, options));
-}
