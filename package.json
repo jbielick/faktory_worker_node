@@ -29,7 +29,7 @@
   },
   "ava": {
     "verbose": true,
-    "timeout": "2s"
+    "timeout": "5s"
   },
   "engines": {
     "node": ">=7"
