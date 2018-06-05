@@ -146,9 +146,9 @@ faktory.register('JobWithHeaders', (...args) => async (job) => {
 
 ## TODO
 
- - [ ] Handle signals from server heartbeat response
- - [ ] Require jobs from folder and automatically register
- - [ ] Logging
+ - [ ] FEAT: Require jobs from folder and automatically register
+ - [ ] Customizable Logger
+ - [x] Handle signals from server heartbeat response
  - [x] Middleware
  - [x] CLI
  - [x] Heartbeat
