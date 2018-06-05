@@ -89,6 +89,15 @@ You can override the default options for a faktory worker by providing an object
 ```js
 faktory.work({
 
+  // default: 127.0.0.1 -- can be set in FAKTORY_URL env (see FAQ)
+  host: '127.0.0.1',
+
+  // default: 7419 -- can be set in FAKTORY_URL env
+  port: 7419,
+
+  // can be set in FAKTORY_URL env
+  password: 's33kr3t',
+
   // default: 20, this is a max number of jobs the worker will have
   // in progress at any time
   concurrency: 5,
@@ -101,10 +110,12 @@ faktory.work({
   // shuts down abruptly
   timeout: 25 * 1000,
 
-
   // default: uuid().first(8) the worker id to use in the faktory-server connection
-  // for this process
-  wid: 'alpha-worker'
+  // for this process. must be unique per process
+  wid: 'alpha-worker',
+
+  // default: [] labels for the faktory worker process to see in the UI
+  labels: [],
 });
 ```
 
