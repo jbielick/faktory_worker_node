@@ -49,7 +49,7 @@ test('pid is present when wid is given in ahoy', (t) => {
 
 test('labels are passed in ahoy', (t) => {
   const labels = ['hippo'];
-  const client = create({ labels });
+  const client = create({ labels, wid: 'something' });
   const hello = client.buildHello({});
   t.deepEqual(hello.labels, labels, 'hello does not includes labels correctly');
 });
