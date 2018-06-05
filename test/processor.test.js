@@ -2,8 +2,7 @@ const test = require('ava');
 const {
   withConnection,
   sleep,
-  push,
-  mockServer
+  push
 } = require('./_helper');
 const Processor = require('../lib/processor');
 

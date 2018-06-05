@@ -6,7 +6,7 @@
   "author": "Josh Bielick <jbielick@gmail.com>",
   "license": "GPL-3.0",
   "scripts": {
-    "test": "nyc --cache ava test/**/*.test.js",
+    "test": "nyc --cache ava --serial",
     "coverage": "nyc report --reporter=html",
     "lint": "eslint lib/**/*.js"
   },

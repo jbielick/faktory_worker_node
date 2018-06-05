@@ -2,6 +2,7 @@ const net = require('net');
 const uuid = require('uuid/v4');
 const debug = require('debug')('faktory-worker:test-helper');
 const Client = require('../lib/client');
+let i = 0;
 
 const createClient = (opts) => new Client(opts);
 
@@ -46,7 +47,8 @@ const mockServer = () => {
 
 const mocked = async (fn) => {
   const server = mockServer();
-  const port = Math.round(Math.random() * 100 + 7000, 0);
+  i += 1;
+  const port = 7000 + i;
   server.listen(port, '127.0.0.1');
   try {
     return fn(server, port);

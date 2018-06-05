@@ -4,7 +4,8 @@ const {
   sleep,
   push,
   mocked,
-  mockServer } = require('./_helper');
+  mockServer
+} = require('./_helper');
 const Manager = require('../lib/manager');
 
 function create(options = {}) {
