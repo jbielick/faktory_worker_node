@@ -7,6 +7,8 @@ node.js version:
 
 npm/yarn version:
 
+faktory-server version: 
+
 `facktory-worker` package version:
 
 #### Code sample:
