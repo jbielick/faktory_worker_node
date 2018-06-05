@@ -47,8 +47,7 @@ test('pid is present when wid is given in ahoy', (t) => {
   t.truthy(!hello.pid, 'pid should not be present');
 });
 
-// #14
-test.skip('labels are passed in ahoy', (t) => {
+test('labels are passed in ahoy', (t) => {
   const labels = ['hippo'];
   const client = create({ labels, wid: 'something' });
   const hello = client.buildHello({});
