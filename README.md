@@ -82,6 +82,32 @@ and
 
 `node_modules/.bin/faktory-cluster`
 
+### Worker Options
+
+You can override the default options for a faktory worker by providing an object to the `work()` method or `new Manager()` constructor.
+
+```js
+faktory.work({
+
+  // default: 20, this is a max number of jobs the worker will have
+  // in progress at any time
+  concurrency: 5,
+
+  // default: ['default'] the queues the worker will process
+  queues: ['critical', 'default', 'eventually'],
+
+  // default: 8000 the number of milliseconds jobs have to complete after
+  // receiving a shutdown signal before the job is aborted and the worker
+  // shuts down abruptly
+  timeout: 25 * 1000,
+
+
+  // default: uuid().first(8) the worker id to use in the faktory-server connection
+  // for this process
+  wid: 'alpha-worker'
+});
+```
+
 ### Debugging
 
 Use `DEBUG=faktory*` to see related debug log lines.
