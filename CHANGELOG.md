@@ -1,3 +1,22 @@
+1.0.0 | 2018-07-21
+---
+
+Implemented:
+
+ * Handle signals from server heartbeat response
+ * Middleware
+ * CLI
+ * Heartbeat
+ * Tests
+ * Authentication
+ * Fail jobs
+ * Add'l client commands API
+ * Labels
+
+BREAKING:
+
+ * Middleware and thunks: fixed issue where middleware did not provide the job function with the context. The job function thunk now takes the context as an arg and the job property can be accessed within. ex: `faktory.register('MyJob', (...args) => ({ job }) => {})`
+
 0.10.0 | 2018-06-04
 ---
 
