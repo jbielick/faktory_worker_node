@@ -23,15 +23,6 @@ test('.use() returns self', t => {
   t.is(faktory, returned, '`this` not returned by .use');
 });
 
-test('.use() adds middleware to the stack', t => {
-  const faktory = create();
-  const mmw = () => {};
-
-  faktory.use(mmw);
-
-  t.is(faktory.middleware[0], mmw, 'middleware function not added to .middleware');
-});
-
 test('.use() throws when arg is not a function', t => {
   const faktory = create();
 
@@ -80,26 +71,6 @@ test('.work() creates a manager, runs it and resolve the manager', async t => {
   });
 });
 
-test('middleware end to end', async t => {
-  const faktory = create();
-  const { queue, jobtype } = await push({args: [1]});
-
-  faktory.use(({ job }, next) => {
-    job.memo = ['hello'];
-    return next();
-  });
-  faktory.use(({ job }, next) => {
-    job.memo.push('world');
-    return next();
-  });
-
-  await new Promise((resolve) => {
-    faktory.register(jobtype, (...args) => (job) => {
-      t.deepEqual(args, [1], 'args not correct');
-      t.deepEqual(job.memo, ['hello', 'world']);
-      resolve();
-    });
-    faktory.work({queues: [queue], concurrency: 1});
-  });
-
+test('it exports the client', t => {
+  t.is(require('../client'), require('../lib/client'));
 });

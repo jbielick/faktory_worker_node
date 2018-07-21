@@ -1,11 +1,12 @@
-const Client = require('./lib/client');
-const Manager = require('./lib/manager');
 const debug = require('debug')('faktory-worker');
 const assert = require('assert');
+const Client = require('./lib/client');
+const Manager = require('./lib/manager');
 
 const faktory = () => {
   const middleware = [];
   const registry = {};
+  let manager;
 
   return {
     get registry() {
@@ -29,8 +30,15 @@ const faktory = () => {
       return new Client(...args).connect();
     },
     work(options = {}) {
-      const manager = new Manager(Object.assign({}, options, { registry, middleware }));
+      if (!manager) {
+        manager = new Manager(Object.assign({}, options, { registry, middleware }));
+      }
       return manager.run();
+    },
+    stop() {
+      const temp = manager;
+      manager = undefined;
+      return temp.stop();
     }
   };
 };

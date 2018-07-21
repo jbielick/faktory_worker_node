@@ -6,6 +6,10 @@ const {
 } = require('./_helper');
 const Processor = require('../lib/processor');
 
+function create(opts) {
+  return new Processor(Object.assign({ withConnection }, opts));
+}
+
 test('takes queues as array or string', t => {
   let processor;
 
@@ -69,7 +73,7 @@ test('handles sync jobfn and sync thunk', async t => {
     const processor = create({
       queues: [queue],
       registry: {
-        [jobtype]: (...args) => (job) => {
+        [jobtype]: (...args) => ({ job }) => {
           t.is(job.jid, jid, 'jid does not match');
           t.deepEqual(args, [1, 2, 'three'], 'args do not match');
           resolve();
@@ -81,7 +85,7 @@ test('handles sync jobfn and sync thunk', async t => {
   });
 });
 
-test('handles sync jobfn and async thunk', async t => {
+test('handles sync jobfn and async (thunk)', async t => {
   const args = [1, 2, 'three'];
   const { queue, jobtype, jid } = await push({ args });
 
@@ -89,7 +93,7 @@ test('handles sync jobfn and async thunk', async t => {
     const processor = create({
       queues: [queue],
       registry: {
-        [jobtype]: (...args) => async (job) => {
+        [jobtype]: (...args) => async ({ job }) => {
           await sleep(1);
           t.is(job.jid, jid, 'jid does not match');
           t.deepEqual(args, [1, 2, 'three'], 'args do not match');
@@ -110,7 +114,7 @@ test('handles async jobfn and sync thunk', async t => {
     const processor = create({
       queues: [queue],
       registry: {
-        [jobtype]: async (...args) => (job) => {
+        [jobtype]: async (...args) => ({ job }) => {
           t.is(job.jid, jid, 'jid does not match');
           t.deepEqual(args, [1, 2, 'three'], 'args do not match');
           resolve();
@@ -130,7 +134,7 @@ test('handles async jobfn and async thunk', async t => {
     const processor = create({
       queues: [queue],
       registry: {
-        [jobtype]: async (...args) => async (job) => {
+        [jobtype]: async (...args) => async ({ job }) => {
           await sleep(1);
           t.is(job.jid, jid, 'jid does not match');
           t.deepEqual(args, [1, 2, 'three'], 'args do not match');
@@ -261,79 +265,6 @@ test('.stop awaits in-progress job', async t => {
   await stop();
 });
 
-test('invokes middleware', async t => {
-  const { queue, jobtype } = await push();
-
-  await new Promise((resolve) => {
-    const processor = create({
-      queues: [queue],
-      middleware: [
-        (ctx, next) => {
-          ctx.job.args = ['hello'];
-          return next();
-        }
-      ],
-      registry: {
-        [jobtype]: (...args) => {
-          t.deepEqual(args, ['hello'], 'middleware not executed');
-          resolve();
-        }
-      }
-    });
-
-    processor.start();
-  });
-});
-
-test('invokes middleware in order', async t => {
-  const recorder = [];
-  const { queue, jobtype } = await push();
-  let processor;
-
-  await new Promise((resolve) => {
-
-    processor = create({
-      queues: [queue],
-      middleware: [
-        async (ctx, next) => {
-          recorder.push('before 1');
-          await next();
-          recorder.push('after 1');
-        },
-        async (ctx, next) => {
-          recorder.push('before 2');
-          await next();
-          recorder.push('after 2');
-        }
-      ],
-      registry: {
-        [jobtype]: async (...args) => {
-          recorder.push('run 1');
-          await sleep(1);
-          recorder.push('run 2');
-          resolve();
-        }
-      }
-    });
-    processor.start();
-  });
-
-  await processor.stop();
-
-  t.deepEqual(
-    recorder,
-    [
-      'before 1',
-      'before 2',
-      'run 1',
-      'run 2',
-      'after 2',
-      'after 1'
-    ],
-    'middleware not executed in order'
-  );
-});
-
 test('.stop() breaks the work loop', async t => {
   let called = 0;
   const { queue, jobtype } = await push();
@@ -366,7 +297,3 @@ test('.sleep() sleeps', async t => {
     t.pass('slept');
   }
 });
-
-function create(opts) {
-  return new Processor(Object.assign({ withConnection }, opts));
-}
