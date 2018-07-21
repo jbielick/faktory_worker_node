@@ -133,10 +133,10 @@ indirection is useful for SaaSes, Heroku Addons, etc.
 
 * How do I access the job payload in my function?
 
-The function passed to `register` can be a thunk. The registered function will receive the job `args` and if that function returns a function, that returned function will be called and provided the raw `job` payload containing all custom props and other metadata of the job payload.
+The function passed to `register` can be a thunk. The registered function will receive the job `args` and if that function returns a function, that returned function will be called and provided the execution context (`ctx`) which contains the raw `job` payload at `ctx.job`, containing all custom props and other metadata of the job payload.
 
 ```js
-faktory.register('JobWithHeaders', (...args) => async (job) => {
+faktory.register('JobWithHeaders', (...args) => async ({ job }) => {
   const [ email ] = args;
   I18n.locale = job.custom.locale;
   log(job.custom.txid);
@@ -144,7 +144,40 @@ faktory.register('JobWithHeaders', (...args) => async (job) => {
 });
 ```
 
-## TODO
+* How do I add middleware to the job execution stack?
+
+Because many jobs may share the same dependencies, the faktory job processor holds a middleware stack of functions that will execute _before_ the job function does. You can add middleware to this stack by calling `faktory.use` and providing a function to be called. The middleware execution in faktory-worker works exactly the same as [`koa`](https://github.com/koajs/koa).
+
+Here's an example of passing a pooled connection to every faktory job that's executed.
+
+```js
+const { createPool } = require('generic-pool'); // any pool or connection library works
+const faktory = require('faktory');
+
+const pool = createPool({
+  create() { return new Client(); },
+  destroy(client) { return client.disconnect(); }
+});
+
+faktory.use(async (ctx, next) => {
+  ctx.db = await pool.acquire();
+  try {
+    // middleware *must* return next() or await next()
+    // this invokes the downstream middleware (including your job fn)
+    await next();
+  } finally {
+    // return connection to pool
+    pool.release(ctx.db);
+  }
+});
+
+faktory.register('TouchRecord', (id) => async ({ db }) => {
+  const record = await db.find(id);
+  await record.touch();
+});
+```
+
+## Roadmap
 
  - [ ] FEAT: Require jobs from folder and automatically register
  - [ ] Customizable Logger
@@ -165,6 +198,10 @@ Install docker.
 `bin/server` will run the faktory server in a docker container. The server is available at `localhost:7419`
 
 Use `DEBUG=faktory*` to see debug lines.
+
+## Tests
+
+The tests can be run via `npm test`. They will be executed in parallel by ava.
 
 ## Author
 
