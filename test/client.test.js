@@ -87,6 +87,11 @@ test('client builds a hex pwdhash with salt', (t) => {
   t.is(hello.pwdhash, hash.digest('hex'), 'pwdhash not generated correctly');
 });
 
+test.only('client unescapes password in url', t => {
+  const client = create({url: 'tcp://:abcd=@somehost:7419'});
+  t.is(client.password, 'abcd=');
+});
+
 test('client send and reply INFO', async (t) => {
   await connect(async (client) => {
     const info = await client.info();
