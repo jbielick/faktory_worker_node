@@ -12,10 +12,7 @@ const n = Number(process.argv[2] || 100000);
 
   for (var i = n; i > 0; i--) {
     pushes.push(
-      client.push({
-        jobtype: 'MyJob',
-        args: [1, 'string', 3]
-      })
+      client.job('MyJob').with(1, 'string', 3).push()
     );
   }
 

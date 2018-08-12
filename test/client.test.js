@@ -1,7 +1,8 @@
 const debug = require('debug')('faktory-client:test');
 const test = require('ava');
-const Client = require('../lib/client');
 const crypto = require('crypto');
+const Client = require('../lib/client');
+const Job = require('../lib/job');
 const {
   createJob,
   createClient: create,
@@ -208,7 +209,7 @@ test('client ACKs a job', async (t) => {
 
 test('fetch returns null when queue is empty', async (t) => {
   return mocked((server, port) => {
-    server.on('FETCH', (msg, socket) => {
+    server.on('FETCH', ({ socket }) => {
       // null bulkstring
       socket.write("$-1\r\n");
     });
@@ -220,19 +221,16 @@ test('fetch returns null when queue is empty', async (t) => {
 });
 
 test('client defaults job payload values according to spec', async (t) => {
-  let job;
+  let serverJob;
   return mocked(async (server, port) => {
-    server.on('PUSH', (msg, socket) => {
-      job = JSON.parse(msg.split(' ')[1]);
+    server.on('PUSH', ({ data, socket }) => {
+      serverJob = data;
       socket.write("+OK\r\n");
     });
     let jid = await connect({ port }, (client) => {
-      const job = {
-        jobtype: 'TestJob'
-      };
-      return client.push(job);
+      return client.push({ jobtype: 'TestJob' });
     });
-    t.deepEqual(job, {
+    t.deepEqual(serverJob, {
       jid,
       jobtype: 'TestJob',
       queue: 'default',
@@ -251,4 +249,25 @@ test('client FAILs a job', async (t) => {
     t.is(await client.fail(fetched.jid, new Error('EHANGRY')), 'OK');
     // assert error data...
   });
+});
+
+test('.job() returns a job builder', t => {
+  const client = create();
+  const job = client.job('MyTestJob');
+
+  t.truthy(job instanceof Job);
+});
+
+test('.job() provides the cilent to the job', t => {
+  const client = create();
+  const job = client.job('MyTestJob');
+
+  t.is(job.client, client);
+});
+
+test('.job() provides the args to the job', t => {
+  const client = create();
+  const job = client.job('MyTestJob', 1, 2, 3);
+
+  t.deepEqual(job.payload.args, [1, 2, 3]);
 });

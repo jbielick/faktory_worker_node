@@ -34,13 +34,19 @@ const mockServer = () => {
   server.on('connection', (socket) => {
     socket.write("+HI {\"v\":2}\r\n");
 
-    server.once('HELLO', (msg, socket) => {
+    server.once('HELLO', ({ socket }) => {
       socket.write("+OK\r\n");
     });
 
     socket.on('data', async (chunk) => {
-      const msg = chunk.toString();
-      server.emit(msg.split(' ')[0], msg, socket);
+      const string = chunk.toString();
+      const [ command, ] = string.split(' ', 1);
+      const rawData = string.replace(`${command} `, '');
+      let data = rawData;
+      try {
+        data = JSON.parse(rawData);
+      } catch(_) {}
+      server.emit(command, { data, socket });
     });
   });
   return server;
@@ -58,7 +64,7 @@ const mocked = async (fn) => {
   }
 };
 
-mocked.beat = (state) => (_, socket) => {
+mocked.beat = (state) => ({ socket }) => {
   if (!state) {
     socket.write("+OK\r\n");
   } else {
@@ -66,7 +72,7 @@ mocked.beat = (state) => (_, socket) => {
     socket.write(`$${json.length}\r\n${json}\r\n`);
   }
 }
-mocked.fetch = (job) => (_, socket) => {
+mocked.fetch = (job) => ({ socket }) => {
   if (job) {
     const string = JSON.stringify(job);
     socket.write(`$${string.length}\r\n${string}\r\n`);
@@ -74,7 +80,7 @@ mocked.fetch = (job) => (_, socket) => {
     socket.write("$-1\r\n");
   }
 };
-mocked.fail = () => (_, socket) => {
+mocked.fail = () => ({ socket }) => {
   socket.write("+OK\r\n");
 };
 

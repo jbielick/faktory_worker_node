@@ -156,8 +156,8 @@ test('.handle() FAILs and throws when no job is registered', async t => {
       server
         .on('BEAT', mocked.beat())
         .on('FETCH', mocked.fetch(job))
-        .on('FAIL', (msg) => {
-          t.truthy(/"jid":"123"/.test(msg));
+        .on('FAIL', ({ data }) => {
+          t.is(data.jid, job.jid);
           worker.stop();
           resolve();
         });
@@ -178,10 +178,9 @@ test('.handle() FAILs and throws when the job throws (sync) during execution', a
       server
         .on('BEAT', mocked.beat())
         .on('FETCH', mocked.fetch(job))
-        .on('FAIL', (msg) => {
-          const payload = JSON.parse(msg.split(/\s(.+)/)[1]);
-          t.is(payload.jid, jid);
-          t.truthy(/always fails/.test(payload.message));
+        .on('FAIL', ({ data }) => {
+          t.is(data.jid, jid);
+          t.truthy(/always fails/.test(data.message));
           worker.stop();
           resolve();
         });
@@ -208,10 +207,9 @@ test('.handle() FAILs and throws when the job rejects (async) during execution',
       server
         .on('BEAT', mocked.beat())
         .on('FETCH', mocked.fetch(job))
-        .on('FAIL', (msg) => {
-          const payload = JSON.parse(msg.split(/\s(.+)/)[1]);
-          t.is(payload.jid, jid);
-          t.truthy(/rejected promise/.test(payload.message));
+        .on('FAIL', ({ data }) => {
+          t.is(data.jid, jid);
+          t.truthy(/rejected promise/.test(data.message));
           worker.stop();
           resolve();
         });
@@ -238,10 +236,9 @@ test('.handle() FAILs when the job returns a rejected promise with no error', as
       server
         .on('BEAT', mocked.beat())
         .on('FETCH', mocked.fetch(job))
-        .on('FAIL', (msg) => {
-          const payload = JSON.parse(msg.split(/\s(.+)/)[1]);
-          t.is(payload.jid, jid);
-          t.truthy(/no error or message/.test(payload.message));
+        .on('FAIL', ({ data }) => {
+          t.is(data.jid, jid);
+          t.truthy(/no error or message/.test(data.message));
           worker.stop();
           resolve();
         });
