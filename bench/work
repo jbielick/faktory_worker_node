@@ -26,6 +26,7 @@ jobs/s: ${Math.round(completed / duration, 2)}
   };
 
   faktory.register('MyJob', async () => {
+    await new Promise(resolve => setTimeout(resolve, 0));
     finish();
   });
 
