@@ -1,3 +1,15 @@
+2.0.0 | 2018-08-13
+---
+
+ * refactors the concurrency model
+
+BREAKING:
+
+ * deleted Manager `faktory/manager`
+ * deleted Processor `faktory/processor`
+
+You should have no issues if you've been using the `faktory` export and not `Manager` and `Processor` classes directly.
+
 1.0.1 | 2018-08-12
 ---
 

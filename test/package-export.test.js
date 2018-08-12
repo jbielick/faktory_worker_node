@@ -1,6 +1,5 @@
 const test = require('ava');
 const {
-  withConnection: connect,
   sleep,
   push,
   mocked
@@ -51,7 +50,7 @@ test('.connect() resolve a client', async t => {
   client.close();
 });
 
-test('.work() creates a manager, runs it and resolve the manager', async t => {
+test('.work() creates a worker, runs it and resolve the worker', async t => {
   t.plan(1);
   await mocked(async (server, port) => {
     server
@@ -63,11 +62,11 @@ test('.work() creates a manager, runs it and resolve the manager', async t => {
         socket.write("$-1\r\n");
       });
     const faktory = create();
-    const manager = await faktory.work({ port, concurrency: 1 });
+    const worker = await faktory.work({ port, concurrency: 1 });
 
-    t.truthy(manager.heartbeat, 'manager not started (no heartbeat)');
+    t.truthy(worker.heartbeat, 'worker not started (no heartbeat)');
 
-    await manager.stop();
+    await worker.stop();
   });
 });
 

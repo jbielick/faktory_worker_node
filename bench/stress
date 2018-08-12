@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -e
+
+while true; do
+  sleep 1
+  bench/push
+done &
+
+bench/work 20
+
+function wait_to_exit {
+  wait
+}
+
+trap wait_to_exit EXIT
+
+wait

@@ -84,7 +84,7 @@ and
 
 ### Worker Options
 
-You can override the default options for a faktory worker by providing an object to the `work()` method or `new Manager()` constructor.
+You can override the default options for a faktory worker by providing an object to the `faktory.work()` method or the `Worker()` constructor.
 
 ```js
 faktory.work({

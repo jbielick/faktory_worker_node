@@ -1,12 +1,12 @@
 const debug = require('debug')('faktory-worker');
 const assert = require('assert');
 const Client = require('./lib/client');
-const Manager = require('./lib/manager');
+const Worker = require('./lib/worker');
 
 const faktory = () => {
   const middleware = [];
   const registry = {};
-  let manager;
+  let worker;
 
   return {
     get registry() {
@@ -22,7 +22,8 @@ const faktory = () => {
       return this;
     },
     register(name, fn) {
-      assert(typeof fn === 'function');
+      assert(typeof fn === 'function', 'a registered job must be a function');
+      debug('registered %s', name);
       registry[name] = fn;
       return this;
     },
@@ -30,14 +31,14 @@ const faktory = () => {
       return new Client(...args).connect();
     },
     work(options = {}) {
-      if (!manager) {
-        manager = new Manager(Object.assign({}, options, { registry, middleware }));
+      if (!worker) {
+        worker = new Worker(Object.assign({}, options, { registry, middleware }));
       }
-      return manager.run();
+      return worker.work();
     },
     stop() {
-      const temp = manager;
-      manager = undefined;
+      const temp = worker;
+      worker = undefined;
       return temp.stop();
     }
   };

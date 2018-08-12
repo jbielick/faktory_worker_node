@@ -1,19 +1,17 @@
 const test = require('ava');
 const {
-  withConnection,
   sleep,
   push,
   mockServer
 } = require('./_helper');
-const Processor = require('../lib/processor');
+const Worker = require('../lib/worker');
 const faktoryFactory = require('../');
 
 test('invokes middleware', async t => {
   const { queue, jobtype } = await push();
 
   await new Promise((resolve) => {
-    const processor = new Processor({
-      withConnection,
+    const worker = new Worker({
       queues: [queue],
       middleware: [
         (ctx, next) => {
@@ -29,19 +27,18 @@ test('invokes middleware', async t => {
       }
     });
 
-    processor.start();
+    worker.work();
   });
 });
 
 test('invokes middleware in order', async t => {
   const recorder = [];
   const { queue, jobtype } = await push();
-  let processor;
+  let worker;
 
   await new Promise((resolve) => {
 
-    processor = new Processor({
-      withConnection,
+    worker = new Worker({
       queues: [queue],
       middleware: [
         async (ctx, next) => {
@@ -64,10 +61,10 @@ test('invokes middleware in order', async t => {
         }
       }
     });
-    processor.start();
+    worker.work();
   });
 
-  await processor.stop();
+  await worker.stop();
 
   t.deepEqual(
     recorder,

@@ -1,27 +1,29 @@
 #!/usr/bin/env node
 
 const faktory = require('../');
-const concurrency = Number(process.argv[2]) || 1;
+const concurrency = Number(process.argv[2]);
 
 (async () => {
 
   let completed = 0;
   const time = process.hrtime();
-  let manager;
+  let worker;
 
   const finish = () => {
     completed += 1;
-    if (completed === 30000) {
+    if (completed % 1000 === 0) {
       const diff = process.hrtime(time);
       const duration = diff[0] + (diff[1] / 1e9);
 
       console.log(`
 processed: ${completed}
-concurrency: ${manager.concurrency}
+concurrency: ${worker.concurrency}
 duration: ${duration}s
 jobs/s: ${Math.round(completed / duration, 2)}
 `);
-      manager.stop();
+    }
+    if (completed === 30000) {
+      worker.stop();
     }
   };
 
@@ -30,6 +32,6 @@ jobs/s: ${Math.round(completed / duration, 2)}
     finish();
   });
 
-  manager = await faktory.work({ concurrency });
+  worker = await faktory.work({ concurrency });
 
 })();
