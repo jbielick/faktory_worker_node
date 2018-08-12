@@ -1,3 +1,8 @@
+1.0.1 | 2018-08-12
+---
+
+ * fix [#15](https://github.com/jbielick/faktory_worker_node/issues/2)
+
 1.0.0 | 2018-07-21
 ---
 
@@ -17,7 +22,7 @@ BREAKING:
 
  * Middleware and thunks: fixed issue where middleware did not provide the job function with the context. The job function thunk now takes the context as an arg and the job property can be accessed within. ex: `faktory.register('MyJob', (...args) => ({ job }) => {})`
 
-0.10.0 | 2018-06-04
+  0.10.0 | 2018-06-04
 ---
 
  * moves `faktory-client` into this repo
