@@ -1,0 +1,257 @@
+const test = require('ava');
+const {
+  sleep,
+  push,
+  mocked,
+  mockServer
+} = require('./_helper');
+const Worker = require('../lib/worker');
+const concurrency = 1;
+
+function create(options = {}) {
+  return new Worker(Object.assign({ concurrency }, options));
+}
+
+test('.work() resolves with a worker', async t => {
+  t.plan(1);
+  await mocked(async (server, port) => {
+    server
+      .on('BEAT', mocked.beat())
+      .on('FETCH', mocked.fetch(null));
+    const worker = create({ port });
+    const resolved = await worker.work();
+    t.is(worker, resolved, '.run did not resolve with self');
+    await worker.stop();
+  });
+});
+
+
+test('passes args to jobfn', async t => {
+  const args = [1, 2, 'three'];
+  const { queue, jobtype } = await push({ args });
+
+  await new Promise((resolve) => {
+    const worker = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: (...args) => {
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    worker.work();
+  });
+});
+
+test('awaits async jobfns', async t => {
+  const args = [1, 2, 'three'];
+  const { queue, jobtype } = await push({ args });
+
+  await new Promise((resolve) => {
+    const worker = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: async (...args) => {
+          await sleep(1);
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    worker.work();
+  });
+});
+
+test('handles sync jobfn and sync thunk', async t => {
+  const args = [1, 2, 'three'];
+  const { queue, jobtype, jid } = await push({ args });
+
+  await new Promise((resolve) => {
+    const worker = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: (...args) => ({ job }) => {
+          t.is(job.jid, jid, 'jid does not match');
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    worker.work();
+  });
+});
+
+test('handles sync jobfn and async (thunk)', async t => {
+  const args = [1, 2, 'three'];
+  const { queue, jobtype, jid } = await push({ args });
+
+  await new Promise((resolve) => {
+    const worker = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: (...args) => async ({ job }) => {
+          await sleep(1);
+          t.is(job.jid, jid, 'jid does not match');
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    worker.work();
+  });
+});
+
+test('handles async jobfn and sync thunk', async t => {
+  const args = [1, 2, 'three'];
+  const { queue, jobtype, jid } = await push({ args });
+
+  await new Promise((resolve) => {
+    const worker = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: async (...args) => ({ job }) => {
+          t.is(job.jid, jid, 'jid does not match');
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    worker.work();
+  });
+});
+
+test('handles async jobfn and async thunk', async t => {
+  const args = [1, 2, 'three'];
+  const { queue, jobtype, jid } = await push({ args });
+
+  await new Promise((resolve) => {
+    const worker = create({
+      queues: [queue],
+      registry: {
+        [jobtype]: async (...args) => async ({ job }) => {
+          await sleep(1);
+          t.is(job.jid, jid, 'jid does not match');
+          t.deepEqual(args, [1, 2, 'three'], 'args do not match');
+          resolve();
+        }
+      }
+    });
+
+    worker.work();
+  });
+});
+
+test('.handle() FAILs and throws when no job is registered', async t => {
+  const job = { jid: '123', jobtype: 'Unknown' };
+  await mocked(async (server, port) => {
+    let worker;
+
+    return new Promise(resolve => {
+      server
+        .on('BEAT', mocked.beat())
+        .on('FETCH', mocked.fetch(job))
+        .on('FAIL', (msg) => {
+          t.truthy(/"jid":"123"/.test(msg));
+          worker.stop();
+          resolve();
+        });
+      worker = create({ port });
+      worker.work();
+    });
+  });
+});
+
+test('.handle() FAILs and throws when the job throws (sync) during execution', async t => {
+  const jid = '123';
+  const jobtype = 'failingjob';
+  const job = { jid, jobtype, args: [] };
+  await mocked(async (server, port) => {
+    let worker;
+
+    return new Promise(resolve => {
+      server
+        .on('BEAT', mocked.beat())
+        .on('FETCH', mocked.fetch(job))
+        .on('FAIL', (msg) => {
+          const payload = JSON.parse(msg.split(/\s(.+)/)[1]);
+          t.is(payload.jid, jid);
+          t.truthy(/always fails/.test(payload.message));
+          worker.stop();
+          resolve();
+        });
+      worker = create({
+        port,
+        registry: {
+          [jobtype]: () => { throw new Error('always fails') }
+        },
+      });
+      worker.work();
+    });
+  });
+});
+
+// #2
+test('.handle() FAILs and throws when the job rejects (async) during execution', async t => {
+  const jid = '123';
+  const jobtype = 'failingjob';
+  const job = { jid, jobtype, args: [] };
+  await mocked(async (server, port) => {
+    let worker;
+
+    return new Promise(resolve => {
+      server
+        .on('BEAT', mocked.beat())
+        .on('FETCH', mocked.fetch(job))
+        .on('FAIL', (msg) => {
+          const payload = JSON.parse(msg.split(/\s(.+)/)[1]);
+          t.is(payload.jid, jid);
+          t.truthy(/rejected promise/.test(payload.message));
+          worker.stop();
+          resolve();
+        });
+      worker = create({
+        port,
+        registry: {
+          [jobtype]: async () => { throw new Error('rejected promise') }
+        },
+      });
+      worker.work();
+    });
+  });
+});
+
+// #2
+test('.handle() FAILs when the job returns a rejected promise with no error', async t => {
+  const jid = '123';
+  const jobtype = 'failingjob';
+  const job = { jid, jobtype, args: [] };
+  await mocked(async (server, port) => {
+    let worker;
+
+    return new Promise(resolve => {
+      server
+        .on('BEAT', mocked.beat())
+        .on('FETCH', mocked.fetch(job))
+        .on('FAIL', (msg) => {
+          const payload = JSON.parse(msg.split(/\s(.+)/)[1]);
+          t.is(payload.jid, jid);
+          t.truthy(/no error or message/.test(payload.message));
+          worker.stop();
+          resolve();
+        });
+      worker = create({
+        port,
+        registry: {
+          [jobtype]: async () => Promise.reject()
+        },
+      });
+      worker.work();
+    });
+  });
+});

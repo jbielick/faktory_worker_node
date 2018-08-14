@@ -1,5 +1,6 @@
 const net = require('net');
 const uuid = require('uuid/v4');
+const getPort = require('get-port');
 const debug = require('debug')('faktory-worker:test-helper');
 const Client = require('../lib/client');
 let i = 0;
@@ -48,13 +49,33 @@ const mockServer = () => {
 const mocked = async (fn) => {
   const server = mockServer();
   i += 1;
-  const port = Math.ceil(7000 + i + Math.random());
+  const port = await getPort();
   server.listen(port, '127.0.0.1');
   try {
     return fn(server, port);
   } finally {
     await new Promise((resolve) => server.close(() => resolve()));
   }
+};
+
+mocked.beat = (state) => (_, socket) => {
+  if (!state) {
+    socket.write("+OK\r\n");
+  } else {
+    const json = JSON.stringify({ state });
+    socket.write(`$${json.length}\r\n${json}\r\n`);
+  }
+}
+mocked.fetch = (job) => (_, socket) => {
+  if (job) {
+    const string = JSON.stringify(job);
+    socket.write(`$${string.length}\r\n${string}\r\n`);
+  } else {
+    socket.write("$-1\r\n");
+  }
+};
+mocked.fail = () => (_, socket) => {
+  socket.write("+OK\r\n");
 };
 
 const sleep = (ms, value = true) => {
