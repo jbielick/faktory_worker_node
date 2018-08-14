@@ -226,6 +226,29 @@ test('stops when the heartbeat response says so', async t => {
   });
 });
 
+test('stops when the heartbeat fails', async t => {
+  t.plan(1);
+  await mocked(async (server, port) => {
+    server
+      .on('BEAT', (msg, socket) => {
+        socket.destroy()
+      });
+    const manager = create({ port, concurrency: 1 });
+
+    const originalStop = manager.stop.bind(manager);
+    const promise = new Promise((resolve) => {
+      manager.stop = () => {
+        t.pass();
+        originalStop();
+        resolve();
+      };
+    });
+
+    await manager.run();
+    await promise;
+  });
+});
+
 test.skip('sends a hearbeat on heartbeatInterval', async t => {
   const server = mockServer();
   let beats = 0;
