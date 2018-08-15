@@ -1,3 +1,11 @@
+2.0.1 | 2018-08-15
+---
+
+ * fixes an issue during shutdown in which the hard shutdown timeout was never cleared
+ * adds a start_delay to Worker#tick to stagger the FETCH thundering herd
+ * adds a test for the quiet signal
+ * stabilizes the shutdown code with process.exit
+
 2.0.0 | 2018-08-13
 ---
 
