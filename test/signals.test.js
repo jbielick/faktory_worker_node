@@ -12,8 +12,28 @@ function create(options = {}) {
   return new Worker(Object.assign({ concurrency }, options));
 }
 
-test.skip('.quiet() stops job fetching', async t => {
+test('.quiet() stops job fetching', async t => {
+  let fetched = 0;
+  await mocked(async (server, port) => {
+    server
+      .once('BEAT', mocked.beat())
+      .on('FETCH', (msg, socket) => {
+        fetched += 1;
+        mocked.fetch(null)(msg, socket);
+      });
 
+    const worker = create({ port });
+
+    await worker.work();
+    await sleep(20);
+    const before = fetched;
+    worker.quiet();
+    await sleep(20);
+    const after = fetched;
+    t.truthy(fetched > 1);
+    t.truthy(after - before < 2);
+    worker.stop();
+  });
 });
 
 test('.stop() breaks the work loop', async t => {
@@ -61,6 +81,13 @@ test('.stop() allows in-progress jobs to finish', async t => {
 
 test('worker drains pool after stop timeout', async t => {
   const { queue, jobtype } = await push();
+  let exited = false;
+
+  const originalExit = process.exit;
+  process.exit = (code) => {
+    exited = true;
+    process.exit = originalExit;
+  };
 
   await new Promise(async (resolve) => {
     const worker = create({
@@ -70,8 +97,7 @@ test('worker drains pool after stop timeout', async t => {
         [jobtype]: async () => {
           worker.stop();
           await sleep(100);
-          t.truthy(worker.clients._draining);
-          t.pass();
+          t.truthy(exited);
           resolve();
         }
       }
@@ -81,7 +107,7 @@ test('worker drains pool after stop timeout', async t => {
   });
 });
 
-test('SIGTERM stops the worker', async t => {
+test.serial('SIGTERM stops the worker', async t => {
   t.plan(1);
   const worker = create();
 
@@ -101,7 +127,7 @@ test('SIGTERM stops the worker', async t => {
   return promise;
 });
 
-test('SIGINT stops the worker', async t => {
+test.serial('SIGINT stops the worker', async t => {
   t.plan(1);
   const worker = create();
 
@@ -121,7 +147,7 @@ test('SIGINT stops the worker', async t => {
   return promise;
 });
 
-test('SIGTSTP quiets the worker', async t => {
+test.serial('SIGTSTP quiets the worker', async t => {
   t.plan(1);
   const worker = create();
 
