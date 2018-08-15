@@ -22,13 +22,13 @@ duration: ${duration}s
 jobs/s: ${Math.round(completed / duration, 2)}
 `);
     }
-    if (completed === 30000) {
+    if (completed === 100000) {
       worker.stop();
     }
   };
 
   faktory.register('MyJob', async () => {
-    await new Promise(resolve => setTimeout(resolve, 0));
+    // await new Promise(resolve => setTimeout(resolve, 0));
     finish();
   });
 

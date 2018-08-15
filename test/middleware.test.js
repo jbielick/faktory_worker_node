@@ -12,6 +12,7 @@ test('invokes middleware', async t => {
 
   await new Promise((resolve) => {
     const worker = new Worker({
+      concurrency: 1,
       queues: [queue],
       middleware: [
         (ctx, next) => {
@@ -39,6 +40,7 @@ test('invokes middleware in order', async t => {
   await new Promise((resolve) => {
 
     worker = new Worker({
+      concurrency: 1,
       queues: [queue],
       middleware: [
         async (ctx, next) => {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const faktory = require('../');
-const n = Number(process.argv[2] || 30000);
+const n = Number(process.argv[2] || 100000);
 
 (async () => {
 

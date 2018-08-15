@@ -16,7 +16,6 @@ function create(options = {}) {
 test('creates execution pool size of concurrency', async t => {
   const concurrency = 2;
   const worker = create({ concurrency });
-  worker.tick = () => {};
   await worker.work();
   t.is(Object.values(worker.processors).length, concurrency, 'has incorrect number of processors');
   await worker.stop();
