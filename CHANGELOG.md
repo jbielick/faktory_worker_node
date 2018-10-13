@@ -1,3 +1,8 @@
+2.2.0 | 2018-10-13
+---
+
+ * adds job builder API to client
+
 2.1.1 | 2018-10-13
 ---
 
