@@ -35,14 +35,14 @@
     "node": ">=7"
   },
   "devDependencies": {
-    "ava": "^0.23.0",
+    "ava": "^0.25.0",
     "coveralls": "^3.0.0",
-    "eslint": "^4.10.0",
-    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint": "^4.10",
+    "eslint-config-airbnb-base": "^13.1",
     "eslint-plugin-import": "^2.8.0",
     "get-port": "^4.0.0",
     "memory-usage": "^1.2.1",
-    "nyc": "^11.2.1"
+    "nyc": "^13.0"
   },
   "dependencies": {
     "commander": "^2.11.0",
