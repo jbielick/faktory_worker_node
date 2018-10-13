@@ -9,7 +9,7 @@
 
 This repository provides a client and node worker framework for [Faktory](https://github.com/contribsys/faktory). The client allows you to push jobs and communicate with the Faktory server and the worker process fetches background jobs from the Faktory server and processes them.
 
-Faktory server compatibility: v0.7.0
+Faktory server compatibility: v0.8.0
 
 ## Installation
 
