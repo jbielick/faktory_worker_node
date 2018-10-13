@@ -26,11 +26,9 @@ const faktory = require('faktory-worker');
 
 const client = await faktory.connect();
 
-const jid = await client.push({
-  jobtype: 'MyDoWorkJob',
-  args: [3, 'small']
-});
+await client.job('ResizeImage', { id: 333, size: 'thumb' }).push();
 
+// cleanup
 await client.close();
 ```
 
@@ -41,9 +39,9 @@ A job is a payload of keys and values according to [the faktory job payload spec
 ```js
 const faktory = require('faktory-worker');
 
-faktory.register('MyDoWorkJob', async (id, size) => {
-  const img = await Image.find(id);
-  await resize(img.blob, size);
+faktory.register('ResizeImage', async ({ id, size }) => {
+  const image = await Image.find(id);
+  await image.resize(size);
 });
 
 await faktory.work();

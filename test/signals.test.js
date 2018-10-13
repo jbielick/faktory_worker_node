@@ -17,9 +17,9 @@ test('.quiet() stops job fetching', async t => {
   await mocked(async (server, port) => {
     server
       .once('BEAT', mocked.beat())
-      .on('FETCH', (msg, socket) => {
+      .on('FETCH', (...args) => {
         fetched += 1;
-        mocked.fetch(null)(msg, socket);
+        mocked.fetch(null)(...args);
       });
 
     const worker = create({ port });

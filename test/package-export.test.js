@@ -39,7 +39,7 @@ test('.registry returns the registry object', t => {
   t.is(faktory.registry['MyJob'], myFunc, 'job not found in registry');
 });
 
-test('.connect() resolve a client', async t => {
+test('.connect() resolves a client', async t => {
   const faktory = create();
 
   const client = await faktory.connect();
@@ -47,17 +47,17 @@ test('.connect() resolve a client', async t => {
   t.is(typeof client.fetch, 'function', '.connect did not resolve object with .fetch method');
   t.truthy(client.connected, 'client not connected');
 
-  client.close();
+  await client.close();
 });
 
 test('.work() creates a worker, runs it and resolve the worker', async t => {
   t.plan(1);
   await mocked(async (server, port) => {
     server
-      .on('BEAT', (msg, socket) => {
+      .on('BEAT', ({ socket }) => {
         socket.write("+OK\r\n");
       })
-      .on('FETCH', async (msg, socket) => {
+      .on('FETCH', async ({ socket }) => {
         await sleep(10);
         socket.write("$-1\r\n");
       });
