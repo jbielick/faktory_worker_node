@@ -1,4 +1,4 @@
-# faktory_worker_node
+# faktory-worker
 
 [![Travis branch](https://img.shields.io/travis/jbielick/faktory_worker_node/master.svg)](https://travis-ci.org/jbielick/faktory_worker_node)
 [![Coveralls github branch](https://img.shields.io/coveralls/github/jbielick/faktory_worker_node/master.svg)](https://coveralls.io/github/jbielick/faktory_worker_node)
