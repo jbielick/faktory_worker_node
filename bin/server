@@ -7,5 +7,5 @@ docker run \
   $@ \
   -p 7419:7419 \
   -p 7420:7420 \
-  contribsys/faktory:0.8.0 \
+  contribsys/faktory:0.9.0 \
   /faktory -b :7419

@@ -29,7 +29,7 @@ test('does not add default to an empty queue array', t => {
   t.deepEqual(worker.queues, []);
 });
 
-test.only('hearbeats', async t => {
+test('hearbeats', async t => {
   await mocked(async (server, port) => {
     let worker;
     let called = 0;
