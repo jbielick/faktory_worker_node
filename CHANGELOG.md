@@ -1,3 +1,8 @@
+2.2.1 | 2018-11-16
+---
+
+ * enables TCP KeepAlive on client sockets to prevent timeouts and disconnects
+
 2.2.0 | 2018-10-13
 ---
 
