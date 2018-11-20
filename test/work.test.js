@@ -1,30 +1,21 @@
 const test = require('ava');
+
 const {
   sleep,
   push,
   mocked,
-  mockServer
+  flush
 } = require('./_helper');
-const Worker = require('../lib/worker');
+const { Worker } = require('../');
+
 const concurrency = 1;
+
+test.beforeEach(() => flush());
+test.afterEach.always(() => flush());
 
 function create(options = {}) {
   return new Worker(Object.assign({ concurrency }, options));
 }
-
-test('.work() resolves with a worker', async t => {
-  t.plan(1);
-  await mocked(async (server, port) => {
-    server
-      .on('BEAT', mocked.beat())
-      .on('FETCH', mocked.fetch(null));
-    const worker = create({ port });
-    const resolved = await worker.work();
-    t.is(worker, resolved, '.run did not resolve with self');
-    await worker.stop();
-  });
-});
-
 
 test('passes args to jobfn', async t => {
   const args = [1, 2, 'three'];

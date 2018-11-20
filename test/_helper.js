@@ -3,58 +3,35 @@ const uuid = require('uuid/v4');
 const getPort = require('get-port');
 const debug = require('debug')('faktory-worker:test-helper');
 const Client = require('../lib/client');
-let i = 0;
-
-const createClient = (opts) => new Client(opts);
-
-const withConnection = async (opts, cb) => {
-  if (!cb && opts) {
-    cb = opts;
-    opts = undefined;
-  }
-
-  const client = createClient(opts);
-
-  debug('Connecting');
-  await client.connect();
-
-  try {
-    return await cb(client);
-  } catch(e) {
-    throw e;
-  } finally {
-    debug('Shutting down client');
-    await client.close();
-  }
-};
 
 const mockServer = () => {
   const server = net.createServer();
-  let shookhands = false;
+
   server.on('connection', (socket) => {
-    socket.write("+HI {\"v\":2}\r\n");
+    server
+      .once('HELLO', ({ socket }) => socket.write("+OK\r\n"))
+      .on('END', ({ socket }) => socket.destroy());
 
-    server.once('HELLO', ({ socket }) => {
-      socket.write("+OK\r\n");
-    });
-
-    socket.on('data', async (chunk) => {
+    socket.on('data', (chunk) => {
       const string = chunk.toString();
-      const [ command, ] = string.split(' ', 1);
+      const [ command, ] = string.replace(/\r\n$/, '').split(' ', 1)
       const rawData = string.replace(`${command} `, '');
       let data = rawData;
       try {
         data = JSON.parse(rawData);
       } catch(_) {}
-      server.emit(command, { data, socket });
+      server.emit(command, { command, data, socket });
+      server.emit('*', { command, data, socket });
     });
+
+    socket.write("+HI {\"v\":2}\r\n");
+    server.emit('HI');
   });
   return server;
 }
 
 const mocked = async (fn) => {
   const server = mockServer();
-  i += 1;
   const port = await getPort();
   server.listen(port, '127.0.0.1');
   try {
@@ -63,6 +40,12 @@ const mocked = async (fn) => {
     await new Promise((resolve) => server.close(() => resolve()));
   }
 };
+
+mocked.ok = () => ({ socket }) => {
+  socket.write("+OK\r\n");
+};
+
+mocked.fail = mocked.ok;
 
 mocked.beat = (state) => ({ socket }) => {
   if (!state) {
@@ -80,47 +63,52 @@ mocked.fetch = (job) => ({ socket }) => {
     socket.write("$-1\r\n");
   }
 };
-mocked.fail = () => ({ socket }) => {
-  socket.write("+OK\r\n");
+
+mocked.info = () => ({ socket }) => {
+  const json = JSON.stringify({ queues: [], faktory: {}, server_utc_time: Date.now() });
+  socket.write(`$${json.length}\r\n${json}\r\n`);
 };
 
 const sleep = (ms, value = true) => {
   return new Promise(resolve => setTimeout(() => resolve(value), ms));
 };
 
-const queueName = (label = 'test') => {
+const randQueue = (label = 'test') => {
   return `${label}-${uuid().slice(0, 6)}`;
 };
 
 const createJob = (...args) => {
   return {
     jobtype: 'testJob',
-    queue: queueName(),
+    queue: randQueue(),
     args
   };
 };
 
-const push = async (opts = {}) => {
-  const queue = opts.queue || queueName();
-  const jobtype = 'TestJob';
-  const args = opts.args || [];
-  const jid = await withConnection(async (client) => {
-    return client.push({
-      jobtype,
-      queue,
-      args
-    });
-  });
-  return { queue, jobtype, args, jid };
+const push = async (options = {}) => {
+  const client = new Client();
+
+  const job = client.job('test');
+  job.queue = randQueue();
+  job.args = options.args || [];
+
+  await job.push();
+
+  client.close();
+
+  return job;
+};
+
+const flush = () => {
+  return new Client().flush();
 };
 
 module.exports = {
-  withConnection,
-  queueName,
+  randQueue,
   sleep,
   push,
+  flush,
   mockServer,
   mocked,
-  createClient,
   createJob,
 };

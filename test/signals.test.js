@@ -1,16 +1,25 @@
 const test = require('ava');
+
 const {
   sleep,
   push,
   mocked,
-  mockServer
+  mockServer,
+  flush,
 } = require('./_helper');
-const Worker = require('../lib/worker');
+const { Worker } = require('../');
+
+test.beforeEach(() => flush());
+test.afterEach.always(() => flush());
+
 const concurrency = 1;
 
 function create(options = {}) {
   return new Worker(Object.assign({ concurrency }, options));
 }
+
+test.beforeEach(() => flush());
+test.afterEach.always(() => flush());
 
 test('.quiet() stops job fetching', async t => {
   let fetched = 0;
