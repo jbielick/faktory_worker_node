@@ -1,3 +1,8 @@
+2.2.3 | 2018-11-20
+---
+
+ * Prevents an uncaught error thrown while successfuly reconnecting (#24)
+
 2.2.2 | 2018-11-16
 ---
 
