@@ -24,12 +24,11 @@ npm install faktory-worker
 ```js
 const faktory = require('faktory-worker');
 
-const client = await faktory.connect();
-
-await client.job('ResizeImage', { id: 333, size: 'thumb' }).push();
-
-// cleanup
-await client.close();
+(async () => {
+  const client = await faktory.connect();
+  await client.job('ResizeImage', { id: 333, size: 'thumb' }).push();
+  await client.close(); // remember to disconnect!
+})().catch(e => console.error(e));
 ```
 
 A job is a payload of keys and values according to [the faktory job payload specification](https://github.com/contribsys/faktory/wiki/The-Job-Payload). Any keys provided will be passed to the faktory server during `PUSH`. A `jid` (uuid) is created automatically for your job when using this library. See [the spec](https://github.com/contribsys/faktory/wiki/The-Job-Payload) for more options and defaults.
@@ -44,8 +43,7 @@ faktory.register('ResizeImage', async ({ id, size }) => {
   await image.resize(size);
 });
 
-await faktory.work();
-// send INT signal to shutdown gracefully
+faktory.work();
 ```
 
 A job function can be a sync or async function. Simply return a promise or use `await` in your async function to perform async tasks during your job. If you return early or don't `await` properly, the job will be `ACK`ed when the function returns.
@@ -64,7 +62,7 @@ faktory.use(async (ctx, next) => {
   console.log(`${ctx.job.jobtype} took ${ms}ms`);
 });
 
-await faktory.work();
+faktory.work();
 ```
 
 Faktory middleware works just like [`koa`](https://github.com/koajs/koa) middleware. You can register a middleware function (async or sync) with `.use`. Middleware is called for every job that is performed. Always return a promise, `await next()`, or `return next();` to allow execution to continue down the middleware chain.
