@@ -10,7 +10,10 @@
     "coverage": "nyc report --reporter=html",
     "lint": "eslint lib",
     "htmldocs": "jsdoc . lib -d docs --readme README.md --pedantic",
-    "docs": "jsdoc2md --files lib/*.js --template docs/template.hbs > docs/api.md"
+    "docs": "jsdoc2md --files lib/*.js --template docs/template.hbs > docs/api.md",
+    "preversion": "npm run lint && npm run test && npm run docs",
+    "version": "git add docs/ package.json",
+    "postversion": "git push && git push --tags"
   },
   "keywords": [
     "faktory",
