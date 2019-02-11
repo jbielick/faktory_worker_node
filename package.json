@@ -9,7 +9,8 @@
     "test": "nyc --cache ava --serial",
     "coverage": "nyc report --reporter=html",
     "lint": "eslint lib",
-    "docs": "jsdoc . lib -d docs --readme README.md --pedantic"
+    "htmldocs": "jsdoc . lib -d docs --readme README.md --pedantic",
+    "docs": "jsdoc2md --files lib/*.js --template docs/template.hbs > docs/api.md"
   },
   "keywords": [
     "faktory",

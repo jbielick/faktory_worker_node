@@ -73,7 +73,8 @@ a connection for your job function to use without having to create it itself.</p
 
 <dl>
 <dt><a href="#external_Jobtype">Jobtype</a> : <code>string</code></dt>
-<dd><p>Discriminator used by a worker to decide how to execute a job. This will be the name you used during register.</p>
+<dd><p>Discriminator used by a worker to decide how to execute a job. This will be the name you
+used during register.</p>
 </dd>
 <dt><a href="#external_timestamp">timestamp</a> : <code>string</code></dt>
 <dd><p>An RFC3339-format datetime string</p>
@@ -126,7 +127,7 @@ Creates a Client with a connection pool
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | [options] | <code>object</code> |  |  |
-| [options.url] | <code>string</code> | <code>&quot;tcp://localhost:7419&quot;</code> | connection string for the faktory server                                                    (checks for FAKTORY_PROVIDER and FAKTORY_URL) |
+| [options.url] | <code>string</code> | <code>&quot;tcp://localhost:7419&quot;</code> | connection string for the faktory server                                                    (checks for FAKTORY_PROVIDER and                                                    FAKTORY_URL) |
 | [options.host] | <code>string</code> | <code>&quot;localhost&quot;</code> | host string to connect to |
 | [options.port] | <code>number</code> \| <code>string</code> | <code>7419</code> | port to connect to faktory server on |
 | [options.password] | <code>string</code> |  | faktory server password to use during HELLO |
@@ -453,9 +454,9 @@ started per-process.
 | [options.wid] | <code>String</code> | <code>uuid().slice(0, 8)</code> | the wid the worker will use |
 | [options.concurrency] | <code>Number</code> | <code>20</code> | how many jobs this worker can process at once |
 | [options.shutdownTimeout] | <code>Number</code> | <code>8</code> | the amount of time in seconds that the worker                                             may take to finish a job before exiting                                             ungracefully |
-| [options.beatInterval] | <code>Number</code> | <code>15</code> | the amount of time in seconds between each heartbeat |
+| [options.beatInterval] | <code>Number</code> | <code>15</code> | the amount of time in seconds between each                                             heartbeat |
 | [options.queues] | <code>Array.&lt;string&gt;</code> | <code>[&#x27;default&#x27;]</code> | the queues this worker will fetch jobs from |
-| [options.middleware] | <code>Array.&lt;function()&gt;</code> | <code>[]</code> | a set of middleware to run before performing each job                                       in koa.js-style middleware execution signature |
+| [options.middleware] | <code>Array.&lt;function()&gt;</code> | <code>[]</code> | a set of middleware to run before performing                                               each job                                       in koa.js-style middleware execution signature |
 | [options.registry] | [<code>Registry</code>](#Registry) | <code>Registry</code> | the job registry to use when working |
 
 **Example**  
@@ -582,7 +583,8 @@ A command to send the server in array form
 <a name="external_Jobtype"></a>
 
 ## Jobtype : <code>string</code>
-Discriminator used by a worker to decide how to execute a job. This will be the name you used during register.
+Discriminator used by a worker to decide how to execute a job. This will be the name you
+used during register.
 
 **Kind**: global external  
 **See**: [https://github.com/contribsys/faktory/wiki/The-Job-Payload](https://github.com/contribsys/faktory/wiki/The-Job-Payload)  
@@ -627,9 +629,9 @@ A work unit that can be scheduled by the faktory work server and executed by cli
 | [queue] | <code>string</code> | <code>&quot;default&quot;</code> | which job queue to push this job onto. |
 | [args] | <code>array</code> | <code>[]</code> | parameters the worker should use when executing the job. |
 | [priority] | <code>number</code> | <code>5</code> | higher priority jobs are dequeued before lower priority jobs. |
-| [retry] | <code>number</code> | <code>25</code> | number of times to retry this job if it fails. 0 discards the failed job, -1 saves the failed job to the dead set. |
+| [retry] | <code>number</code> | <code>25</code> | number of times to retry this job if it fails. 0 discards the                               failed job, -1 saves the failed job to the dead set. |
 | [at] | [<code>timestamp</code>](#external_timestamp) |  | run the job at approximately this time; immediately if blank |
-| [reserve_for] | <code>number</code> | <code>1800</code> | number of seconds a job may be held by a worker before it is considered failed. |
+| [reserve_for] | <code>number</code> | <code>1800</code> | number of seconds a job may be held by a worker before it                                       is considered failed. |
 | custom | <code>object</code> |  | provides additional context to the worker executing the job. |
 
 <a name="external_JobFunction"></a>
