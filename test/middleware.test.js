@@ -1,11 +1,11 @@
 const test = require('ava');
-const {
-  sleep,
-  push,
-  mockServer
-} = require('./_helper');
-const Worker = require('../lib/worker');
+
+const { Worker } = require('../');
 const faktoryFactory = require('../');
+const { sleep, push, flush } = require('./_helper');
+
+test.beforeEach(() => flush());
+test.afterEach.always(() => flush());
 
 test('invokes middleware', async t => {
   const { queue, jobtype } = await push();

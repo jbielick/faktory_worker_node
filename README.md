@@ -17,6 +17,11 @@ Faktory server compatibility: v0.9.0
 npm install faktory-worker
 ```
 
+## Links
+
+- [API Docs](docs/api.md)
+- [contribsys/faktory](https://github.com/contribsys/faktory)
+
 ## Usage
 
 ### Pushing jobs
