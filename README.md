@@ -9,7 +9,7 @@
 
 A node.js client and worker library for the [Faktory](https://github.com/contribsys/faktory) job server. The client allows you to push jobs and communicate with the Faktory server and the worker fetches background jobs from the Faktory server and processes them.
 
-Faktory server compatibility: v0.9.0
+Faktory server compatibility: v0.9.5
 
 ## Installation
 

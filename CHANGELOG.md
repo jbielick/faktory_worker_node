@@ -1,3 +1,25 @@
+3.0.0 | 2019-02-11
+---
+
+ * Refactors connection handling
+ * Adds a connection pool to every Client
+ * Client.connect() not necessary before using connection
+   Client.connect() now connects and disconnects to test the connection details. A connection
+   is created in the pool when it is needed.
+ * Added @private Connection class
+ * Added generated jsdocs to docs/ for public API
+ * Client constructor accepts poolSize parameter for size of connection pool
+ * Client and Worker exported by package: `const { Client, Worker } = require('faktory-worker');`
+ * Compatibility with faktory v0.9.5
+
+BREAKING
+
+ * `Job` method chaining: `new Job().args().queue()` chaining deprecated. See
+    [API Docs for update](docs/api.md#job) for more information. TL;DR use accessors
+    (`job.queue = ''`) isntead of method chains (`queue().retry(1)`).
+ * `Client.send(command, ASSERTION)`: Undocumented, but Client.send() accepted a second
+   argument--an expected response. Please use Client.sendWithAssert for this behavior.
+
 2.2.3 | 2018-11-20
 ---
 
