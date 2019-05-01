@@ -4,7 +4,7 @@
   "description": "A faktory worker framework for node apps",
   "main": "index.js",
   "author": "Josh Bielick <jbielick@gmail.com>",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "scripts": {
     "test": "nyc --cache ava --serial",
     "coverage": "nyc report --reporter=html",
