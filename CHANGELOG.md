@@ -1,3 +1,13 @@
+3.0.2 | 2019-05-02
+---
+
+ * Allow failing of jobs with errors that have no stack (#29)
+
+3.0.1 | 2019-03-29
+---
+
+ * Add missing passing of password refernce to client
+
 3.0.0 | 2019-02-11
 ---
 
