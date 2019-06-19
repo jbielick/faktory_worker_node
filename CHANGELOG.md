@@ -1,4 +1,4 @@
-3.0.2 | 2019-05-02
+3.0.3 | 2019-05-02
 ---
 
  * Listen for and log connection errors instead of allowing them to be uncaught and crashing the node.js process. (#31)
