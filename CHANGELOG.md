@@ -1,6 +1,12 @@
 3.0.2 | 2019-05-02
 ---
 
+ * Listen for and log connection errors instead of allowing them to be uncaught and crashing the node.js process. (#31)
+ * Increase connection timeout to 10s (#30)
+
+3.0.2 | 2019-05-02
+---
+
  * Allow failing of jobs with errors that have no stack (#29)
 
 3.0.1 | 2019-03-29
