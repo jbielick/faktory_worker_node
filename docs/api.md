@@ -300,6 +300,7 @@ const job = client.job('SendWelcomeEmail', id);
 ```
 **Example**  
 ```js
+const Job = require('faktory/lib/job');
 // without a client
 const job = new Job('SendWelcomeEmail');
 job.args = [id];
