@@ -38,6 +38,10 @@ connection terminations. Use this object for all interactions with the factory s
 </dd>
 <dt><a href="#Job">Job</a></dt>
 <dd><p>A class wrapping a <a href="#external_JobPayload">JobPayload</a></p>
+<p>Creating and pushing a job is typically accomplished by using
+a faktory client, which implements <code>.job</code> and automatically
+sets the client for the job when calling <code>.push</code> on the job later.</p>
+<p>You do not need to use this class directly.`</p>
 </dd>
 <dt><a href="#Worker">Worker</a></dt>
 <dd><p>Representation of a worker process with many concurrent job processors. Works at the
@@ -263,6 +267,12 @@ Sends a FAIL command to the server for a particular job ID with error informatio
 ## Job
 A class wrapping a [JobPayload](#external_JobPayload)
 
+Creating and pushing a job is typically accomplished by using
+a faktory client, which implements `.job` and automatically
+sets the client for the job when calling `.push` on the job later.
+
+You do not need to use this class directly.`
+
 **Kind**: global class  
 
 * [Job](#Job)
@@ -292,20 +302,11 @@ Creates a job
 | jobtype | <code>string</code> | [Jobtype](#external_Jobtype) string |
 | [client] | [<code>Client</code>](#Client) | a client to use for communicating to the server (if calling push) |
 
-**Example**  
+**Example** *(with a faktory client)*  
 ```js
 // with a client
 const client = await faktory.connect();
 const job = client.job('SendWelcomeEmail', id);
-```
-**Example**  
-```js
-const Job = require('faktory/lib/job');
-// without a client
-const job = new Job('SendWelcomeEmail');
-job.args = [id];
-job.queue = 'mailers';
-console.log(job.toJSON());
 ```
 <a name="Job+jid"></a>
 
