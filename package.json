@@ -1,6 +1,6 @@
 {
   "name": "faktory-worker",
-  "version": "3.0.4",
+  "version": "3.1.0",
   "description": "A faktory worker framework for node apps",
   "main": "index.js",
   "author": "Josh Bielick <jbielick@gmail.com>",
