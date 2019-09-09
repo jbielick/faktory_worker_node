@@ -41,23 +41,23 @@
   },
   "devDependencies": {
     "ava": "^0.25.0",
-    "coveralls": "^3.0.0",
+    "coveralls": "3.0.6",
     "eslint": "^4.10",
-    "eslint-config-airbnb-base": "^13.1",
-    "eslint-plugin-import": "^2.8.0",
-    "get-port": "^4.0.0",
-    "jsdoc": "3.5.5",
+    "eslint-config-airbnb-base": "13.2.0",
+    "eslint-plugin-import": "2.18.2",
+    "get-port": "4.2.0",
+    "jsdoc": "3.6.3",
     "jsdoc-to-markdown": "^3.1.0-1",
     "memory-usage": "^1.2.1",
     "nyc": "13.3.0",
     "sinon": "7.2.3"
   },
   "dependencies": {
-    "commander": "^2.11.0",
+    "commander": "2.20.0",
     "debug": "^4.1.0",
-    "generic-pool": "^3.4.2",
+    "generic-pool": "3.7.1",
     "koa-compose": "^4.0.0",
     "redis-parser": "^3.0.0",
-    "uuid": "^3.1.0"
+    "uuid": "3.3.3"
   }
 }
