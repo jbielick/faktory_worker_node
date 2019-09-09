@@ -43,6 +43,12 @@ a faktory client, which implements <code>.job</code> and automatically
 sets the client for the job when calling <code>.push</code> on the job later.</p>
 <p>You do not need to use this class directly.`</p>
 </dd>
+<dt><a href="#Mutation">Mutation</a></dt>
+<dd><p>A wrapper for the <a href="https://github.com/contribsys/faktory/wiki/Mutate-API">Mutate API</a></p>
+<p>A low-level data management API to script certain repairs or migrations.</p>
+<p>!!! Please be warned: MUTATE commands can be slow and/or resource intensive.
+<strong>They should not be used as part of your application logic.</strong></p>
+</dd>
 <dt><a href="#Worker">Worker</a></dt>
 <dd><p>Representation of a worker process with many concurrent job processors. Works at the
 concurrency set in options during construction. Will hold at most <code>concurrency</code> jobs
@@ -428,6 +434,121 @@ generates a uuid
 
 **Kind**: static method of [<code>Job</code>](#Job)  
 **Returns**: <code>string</code> - a uuid/v4 string  
+<a name="Mutation"></a>
+
+## Mutation
+A wrapper for the [Mutate API](https://github.com/contribsys/faktory/wiki/Mutate-API)
+
+A low-level data management API to script certain repairs or migrations.
+
+!!! Please be warned: MUTATE commands can be slow and/or resource intensive.
+**They should not be used as part of your application logic.**
+
+**Kind**: global class  
+
+* [Mutation](#Mutation)
+    * [new Mutation(client)](#new_Mutation_new)
+    * [.ofType(type)](#Mutation+ofType)
+    * [.withJids(...jids)](#Mutation+withJids)
+    * [.matching(pattern)](#Mutation+matching)
+    * [.clear()](#Mutation+clear)
+    * [.kill()](#Mutation+kill)
+    * [.discard()](#Mutation+discard)
+    * [.requeue()](#Mutation+requeue)
+
+<a name="new_Mutation_new"></a>
+
+### new Mutation(client)
+
+| Param | Type |
+| --- | --- |
+| client | [<code>Client</code>](#Client) | 
+
+<a name="Mutation+ofType"></a>
+
+### mutation.ofType(type)
+Filters the affected jobs by a jobtype string.
+Use this to ensure you're only affecting a single jobtype if applicable.
+Can be chained.
+
+Note: jobtype and other filters do not apply for the *clear* command.
+
+**Kind**: instance method of [<code>Mutation</code>](#Mutation)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| type | <code>string</code> | jobtype fiter for operation |
+
+**Example**  
+```js
+client.dead.ofType('SendEmail').discard();
+```
+<a name="Mutation+withJids"></a>
+
+### mutation.withJids(...jids)
+Filters the affected jobs by one or more job ids. This is much more
+efficient when only one jid is provided. Can be chained.
+
+Note: jobtype and other filters do not apply for the *clear* command.
+
+**Kind**: instance method of [<code>Mutation</code>](#Mutation)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ...jids | <code>string</code> | job ids to target for the operation |
+
+**Example**  
+```js
+await client.retries.withJids('1234').requeue();
+```
+<a name="Mutation+matching"></a>
+
+### mutation.matching(pattern)
+Filters the MUTATE selection to jobs matching a Redis SCAN pattern.
+Can be chained.
+
+Note the regexp filter scans the entire job payload and can be tricky to
+get right, for instance you'll probably need * on both sides. The regexp
+filter option is passed to Redis's SCAN command directly, read the SCAN
+documentation for further details.
+https://redis.io/commands/scan
+
+**Kind**: instance method of [<code>Mutation</code>](#Mutation)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| pattern | <code>string</code> | redis SCAN pattern to target jobs for the operation |
+
+**Example**  
+```js
+await client.retries.matching("*uid:12345*").kill();
+```
+<a name="Mutation+clear"></a>
+
+### mutation.clear()
+Executes a *clear* mutation. This clears the
+set entirely **and any filtering added does not apply**.
+
+**Kind**: instance method of [<code>Mutation</code>](#Mutation)  
+<a name="Mutation+kill"></a>
+
+### mutation.kill()
+Executes a *kill* mutation. Jobs that are killed are sent to the dead set.
+
+**Kind**: instance method of [<code>Mutation</code>](#Mutation)  
+<a name="Mutation+discard"></a>
+
+### mutation.discard()
+Executes a *discard* mutation. Jobs that are discarded are permanently deleted.
+
+**Kind**: instance method of [<code>Mutation</code>](#Mutation)  
+<a name="Mutation+requeue"></a>
+
+### mutation.requeue()
+Executes a *requeue* mutation. Jobs that are requeued are sent back to their
+original queue for processing.
+
+**Kind**: instance method of [<code>Mutation</code>](#Mutation)  
 <a name="Worker"></a>
 
 ## Worker
