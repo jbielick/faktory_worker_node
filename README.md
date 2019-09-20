@@ -88,35 +88,35 @@ and
 
 You can override the default options for a faktory worker by providing an object to the `faktory.work()` method or the `Worker()` constructor.
 
+Here are the defaults:
+
 ```js
-faktory.work({
+await faktory.work({
 
-  // default: 127.0.0.1 -- can be set in FAKTORY_URL env (see FAQ)
-  host: '127.0.0.1',
+  host: process.env.FAKTORY_URL || '127.0.0.1',
 
-  // default: 7419 -- can be set in FAKTORY_URL env
+  // default: 7419 -- can extracted from FAKTORY_URL env var
   port: 7419,
 
-  // can be set in FAKTORY_URL env
-  password: 's33kr3t',
+  // can extracted from FAKTORY_URL env var
+  password: undefined,
 
-  // default: 20, this is a max number of jobs the worker will have
+  // this is a max number of jobs the worker will have
   // in progress at any time
-  concurrency: 5,
+  concurrency: 20,
 
-  // default: ['default'] the queues the worker will process
-  queues: ['critical', 'default', 'eventually'],
+  // the queues the worker will process—remember to preserve default if overriding this
+  queues: ['default'],
 
-  // default: 8000 the number of milliseconds jobs have to complete after
-  // receiving a shutdown signal before the job is aborted and the worker
-  // shuts down abruptly
-  timeout: 25 * 1000,
+  // the number of milliseconds jobs have to complete after
+  // receiving a graceful shutdown signal. After this timeout, in-progress jobs may be abruptly stopped.
+  timeout: 8 * 1000,
 
-  // default: uuid().first(8) the worker id to use in the faktory-server connection
-  // for this process. must be unique per process
-  wid: 'alpha-worker',
+  // the worker id to use in the faktory-server connection
+  // for this process. must be unique per process.
+  wid: uuid().first(8),
 
-  // default: [] labels for the faktory worker process to see in the UI
+  // labels for the faktory worker process to see in the UI
   labels: [],
 });
 ```
@@ -179,10 +179,13 @@ faktory.register('TouchRecord', (id) => async ({ db }) => {
 });
 ```
 
-## Roadmap
+## Features
 
- - [ ] FEAT: Require jobs from folder and automatically register
- - [ ] Customizable Logger
+ - [ ] CLI: Require jobs from folder and automatically register
+ - [ ] Customizable logger
+ - [ ] Pro features
+ - [x] Mutate API
+ - [x] Connection pooling
  - [x] Handle signals from server heartbeat response
  - [x] Middleware
  - [x] CLI
@@ -199,11 +202,15 @@ Install docker.
 
 `bin/server` will run the faktory server in a docker container. The server is available at `localhost:7419`
 
-Use `DEBUG=faktory*` to see debug lines.
+## Debugging
+
+Use `DEBUG=faktory*` to see debug output from this library.
 
 ## Tests
 
-The tests can be run via `npm test`. They will be executed in parallel by ava.
+A faktory server must be running locally. Use `bin/server` to start one.
+
+The tests can be run via `npm test`—they will be executed by ava.
 
 ## Author
 
