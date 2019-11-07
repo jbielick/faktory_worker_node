@@ -1,3 +1,8 @@
+3.1.0 | 2019-11-07
+---
+
+ * Allows configuring of the client connection pool size via `poolSize` constructor option for Worker. (#37)
+
 3.0.3 | 2019-05-02
 ---
 

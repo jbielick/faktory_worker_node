@@ -41,6 +41,7 @@ export class Client {
 export interface WorkerOptions {
     wid?: string;
     concurrency?: number;
+    poolSize?: number;
     shutdownTimeout?: number;
     beatInterval?: number;
     queues?: string[];

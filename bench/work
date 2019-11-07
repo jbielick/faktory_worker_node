@@ -11,9 +11,9 @@ const concurrency = Number(process.argv[2]);
 
   const finish = () => {
     completed += 1;
-    if (completed % 1000 === 0) {
+    if (completed === 10000) {
       const diff = process.hrtime(time);
-      const duration = diff[0] + (diff[1] / 1e9);
+      const duration = diff[0] + diff[1] / 1e9;
 
       console.log(`
 processed: ${completed}
@@ -21,8 +21,6 @@ concurrency: ${worker.concurrency}
 duration: ${duration}s
 jobs/s: ${Math.round(completed / duration, 2)}
 `);
-    }
-    if (completed === 100000) {
       worker.stop();
     }
   };
