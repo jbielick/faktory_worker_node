@@ -581,6 +581,7 @@ started per-process.
 | [options.queues] | <code>Array.&lt;string&gt;</code> | <code>[&#x27;default&#x27;]</code> | the queues this worker will fetch jobs from |
 | [options.middleware] | <code>Array.&lt;function()&gt;</code> | <code>[]</code> | a set of middleware to run before performing                                               each job                                       in koa.js-style middleware execution signature |
 | [options.registry] | [<code>Registry</code>](#Registry) | <code>Registry</code> | the job registry to use when working |
+| [options.poolSize] | <code>Number</code> | <code>concurrency+2</code> | the client connection pool size for                                                  this worker |
 
 **Example**  
 ```js
