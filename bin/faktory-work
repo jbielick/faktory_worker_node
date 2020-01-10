@@ -3,4 +3,7 @@
 const faktory = require('../');
 const program = require('../lib/cli');
 
-faktory.work(program);
+faktory.work(program).catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
