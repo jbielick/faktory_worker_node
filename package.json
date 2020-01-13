@@ -48,7 +48,6 @@
     "get-port": "4.2.0",
     "jsdoc": "3.6.3",
     "jsdoc-to-markdown": "^3.1.0-1",
-    "memory-usage": "^1.2.1",
     "nyc": "13.3.0",
     "sinon": "7.2.3"
   },
