@@ -1,11 +1,16 @@
+3.3.1 | 2020-01-14
+---
+
+ * apply a ceiling to the linear connection backoff to prevent endless sleep
+
 3.3.0 | 2020-01-14
 ---
 
-    - backs off new connection attempts when they fail consecutively preventing an impossible connection from entering a tight loop
-    - Worker is now an event emitter, `fail` is emitted on job failure
-    - removes a module with trouble installing (memory profiler)
-    - worker now `BEAT`s upon startup
-    - processor pool starts up synchronously instead of concurrently
+ - backs off new connection attempts when they fail consecutively preventing an impossible connection  from entering a tight loop
+ - Worker is now an event emitter, `fail` is emitted on job failure
+ - removes a module with trouble installing (memory profiler)
+ - worker now `BEAT`s upon startup
+ - processor pool starts up synchronously instead of concurrently
 
 3.2.0 | 2019-11-07
 ---
