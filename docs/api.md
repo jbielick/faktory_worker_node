@@ -120,7 +120,7 @@ connection terminations. Use this object for all interactions with the factory s
     * [.close()](#Client+close) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;undefined&gt;</code>
     * [.job(jobtype, ...args)](#Client+job) ⇒ [<code>Job</code>](#Job)
     * [.send(...args)](#Client+send)
-    * [.fetch(...queues)](#Client+fetch) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;(object\|null)&gt;</code>
+    * [.fetch(...queues)](#Client+fetch) ⇒ <code>Promise.&lt;object&gt;</code> \| <code>null</code>
     * [.beat()](#Client+beat) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
     * [.push(job)](#Client+push) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
     * [.flush()](#Client+flush) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
@@ -198,11 +198,11 @@ the promise returned by the wrapped function is resolved or rejected.
 
 <a name="Client+fetch"></a>
 
-### client.fetch(...queues) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;(object\|null)&gt;</code>
+### client.fetch(...queues) ⇒ <code>Promise.&lt;object&gt;</code> \| <code>null</code>
 Fetches a job payload from the server from one of ...queues
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;(object\|null)&gt;</code> - a job payload if one is available, otherwise null  
+**Returns**: <code>Promise.&lt;object&gt;</code> \| <code>null</code> - a job payload if one is available, otherwise null  
 
 | Param | Type | Description |
 | --- | --- | --- |
