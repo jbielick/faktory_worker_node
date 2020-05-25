@@ -61,11 +61,11 @@ A job function can be a sync or async function. Simply return a promise or use `
 const faktory = require('faktory-worker');
 
 faktory.use(async (ctx, next) => {
-  const start = Date.now();
-  await next();
-  const ms = Date.now() - start;
-  console.log(`${ctx.job.jobtype} took ${ms}ms`);
-});
+  const start = process.hrtime()
+  await next()
+  const time = process.hrtime(start)
+  console.info('%s took %ds %dms', ctx.job.jobtype, time[0], time[1] / 1e6)
+})
 
 faktory.work();
 ```
