@@ -36,6 +36,11 @@ export class Client {
     public connect(): Promise<Client>;
     public close(): void;
     public job(jobtype: string, ...args: any[]): Job;
+
+    /**
+     * @return {Promise<string>} A promise to the jid for the pushed job
+     */
+    public push(job: Job | Object): Promise<string>;
 }
 
 export interface WorkerOptions {
