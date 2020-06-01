@@ -1,0 +1,12 @@
+test
+*.test.js
+docs
+coverage
+bench
+.github
+.eslintignore
+.eslintrc.json
+.travis.yml
+CODE_OF_CONDUCT.md
+ISSUE_TEMPLATE.md
+.nyc_output
