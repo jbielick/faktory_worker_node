@@ -42,7 +42,7 @@
   "devDependencies": {
     "ava": "^0.25.0",
     "coveralls": "3.1.0",
-    "eslint": "^4.10",
+    "eslint": "^6.8",
     "eslint-config-airbnb-base": "13.2.0",
     "eslint-plugin-import": "2.18.2",
     "get-port": "4.2.0",
