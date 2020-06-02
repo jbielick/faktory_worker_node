@@ -57,6 +57,6 @@
     "generic-pool": "3.7.1",
     "koa-compose": "^4.0.0",
     "redis-parser": "^3.0.0",
-    "uuid": "3.3.3"
+    "uuid": "8.1.0"
   }
 }
