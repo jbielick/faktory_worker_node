@@ -1,13 +1,26 @@
-const debug = require('debug')('faktory-worker:worker');
-const uuid = require('uuid');
-const compose = require('koa-compose');
-const EventEmitter = require('events');
+import { MiddlewareFunction, Registry, JobPayload, MiddlewareContext, NextFunction } from "./types";
 
-const Client = require('./client');
-const wrapNonErrors = require('./wrap-non-errors');
-const sleep = require('./sleep');
+const debug = require("debug")("faktory-worker:worker");
+const uuid = require("uuid");
+const compose = require("koa-compose");
+const EventEmitter = require("events");
 
-const START_DELAY = process.env.NODE_ENV === 'test' ? 0 : 5;
+import Client, { ClientOptions } from './client';
+const wrapNonErrors = require("./wrap-non-errors");
+const sleep = require("./sleep");
+
+const START_DELAY = process.env.NODE_ENV === "test" ? 0 : 5;
+
+export interface WorkerOptions {
+  wid?: string;
+  concurrency?: number;
+  timeout?: number;
+  beatInterval?: number;
+  queues?: string[];
+  middleware?: MiddlewareFunction[];
+  registry?: Registry;
+  poolSize?: number;
+};
 
 /**
  * Representation of a worker process with many concurrent job processors. Works at the
@@ -23,7 +36,18 @@ const START_DELAY = process.env.NODE_ENV === 'test' ? 0 : 5;
  *
  * worker.work();
  */
-class Worker extends EventEmitter {
+export default class Worker extends EventEmitter {
+  wid: string;
+  concurrency: number;
+  shutdownTimeout: number;
+  beatInterval: number;
+  queues: string[];
+  middleware: MiddlewareFunction[];
+  registry: Registry;
+  processors: {
+    [name: string]: Promise<any>
+  }
+  client: Client;
   /**
    * @param {object} [options]
    * @param  {String} [options.wid=uuid().slice(0, 8)]: the wid the worker will use
@@ -41,42 +65,41 @@ class Worker extends EventEmitter {
    * @param {Number} [options.poolSize=concurrency+2] the client connection pool size for
    *                                                  this worker
    */
-  constructor(options = {}) {
+  constructor(options: WorkerOptions | ClientOptions  = {}) {
     super();
     this.wid = options.wid || uuid().slice(0, 8);
-    this.concurrency = options.concurrency || 20;
-    this.shutdownTimeout = (options.timeout || 8) * 1000;
-    this.beatInterval = (options.beatInterval || 15) * 1000;
-    this.queues = options.queues || [];
+    this.concurrency = (options as WorkerOptions).concurrency || 20;
+    this.shutdownTimeout = ((options as WorkerOptions).timeout || 8) * 1000;
+    this.beatInterval = ((options as WorkerOptions).beatInterval || 15) * 1000;
+    this.queues = (options as WorkerOptions).queues || [];
     if (this.queues.length === 0) {
-      this.queues = ['default'];
+      this.queues = ["default"];
     }
-    this.middleware = [].concat(options.middleware || []);
-    this.registry = options.registry || {};
+    this.middleware = (options as WorkerOptions).middleware || [];
+    this.registry = (options as WorkerOptions).registry || {};
     this.processors = {};
     this.client = new Client({
       wid: this.wid,
-      url: options.url,
-      host: options.host,
-      port: options.port,
-      password: options.password,
-      poolSize: options.poolSize || (this.concurrency + 2),
-      labels: options.labels || [],
+      url: (options as ClientOptions).url,
+      host: (options as ClientOptions).host,
+      port: (options as ClientOptions).port,
+      password: (options as ClientOptions).password,
+      poolSize: (options as ClientOptions).poolSize || this.concurrency + 2,
+      labels: (options as ClientOptions).labels || [],
     });
   }
 
   /**
    * @private
    * @param  {string} pid
-   * @return {undefined}
    */
-  async tick(pid) {
+  async tick(pid: string): Promise<void> {
     if (this.quieted) return;
     try {
       const job = await this.fetch();
       if (job) await this.handle(job);
     } catch (e) {
-      this.emit('error', e);
+      this.emit("error", e);
       await sleep(1000);
     } finally {
       setImmediate(() => this.setTick(pid));
@@ -91,8 +114,8 @@ class Worker extends EventEmitter {
    * @see  Worker.quiet
    * @see  Worker.stop
    */
-  async work() {
-    debug('work concurrency=%i', this.concurrency);
+  async work(): Promise<Worker> {
+    debug("work concurrency=%i", this.concurrency);
     this.execute = this.createExecutor();
     await this.beat();
     this.heartbeat = setInterval(() => this.beat(), this.beatInterval);
@@ -100,14 +123,14 @@ class Worker extends EventEmitter {
 
     for (let index = 0; index < this.concurrency; index += 1) {
       await sleep(index * START_DELAY);
-      debug('starting p%i', index);
+      debug("starting p%i", index);
       this.setTick(`p${index + 1}`);
     }
 
     return this;
   }
 
-  setTick(pid) {
+  setTick(pid: string) {
     this.processors[pid] = this.tick(pid);
   }
 
@@ -117,8 +140,8 @@ class Worker extends EventEmitter {
    *
    * @return {undefined}
    */
-  quiet() {
-    debug('quiet');
+  quiet(): void {
+    debug("quiet");
     this.quieted = true;
   }
 
@@ -127,16 +150,16 @@ class Worker extends EventEmitter {
    *
    * @return {promise} resolved when worker stops
    */
-  async stop() {
+  async stop(): Promise<undefined> {
     Worker.removeSignalHandlers();
-    debug('stop');
+    debug("stop");
     this.quiet();
     this.stopped = true;
     clearInterval(this.heartbeat);
 
     return new Promise(async (resolve) => {
       const timeout = setTimeout(async () => {
-        debug('shutdown timeout exceeded');
+        debug("shutdown timeout exceeded");
         // @TODO fail in progress jobs so they retry faster
         this.client.close();
         resolve();
@@ -144,24 +167,25 @@ class Worker extends EventEmitter {
       }, this.shutdownTimeout);
 
       try {
-        debug('awaiting in progress');
+        debug("awaiting in progress");
         await Promise.all(this.inProgress);
-        debug('all clear');
+        debug("all clear");
         await this.client.close();
         clearTimeout(timeout);
         resolve();
       } catch (e) {
-        console.warn('error during forced shutdown:', e);
+        console.warn("error during forced shutdown:", e);
       }
     });
   }
 
   /**
-   * Returns an array of ids of processors with a job currently in progress
+   * Returns an array of promises, each of which is a processor promise
+   * doing work or waiting on fetch.
    *
-   * @return {array} array of processor ids
+   * @return {array} array of processor promises
    */
-  get inProgress() {
+  get inProgress(): Array<Promise<any>> {
     return Object.values(this.processors);
   }
 
@@ -172,13 +196,13 @@ class Worker extends EventEmitter {
    * @private
    * @return {undefined}
    */
-  async beat() {
+  async beat(): Promise<void> {
     const response = await this.client.beat();
     switch (response) {
-      case 'quiet':
+      case "quiet":
         this.quiet();
         break;
-      case 'terminate':
+      case "terminate":
         this.stop();
         break;
       default:
@@ -193,7 +217,7 @@ class Worker extends EventEmitter {
    * @return {JobPayload|null} a job payload from the server or null when there are
    *                             no jobs
    */
-  fetch() {
+  fetch(): Promise<JobPayload|null> {
     return this.client.fetch(...this.queues);
   }
 
@@ -205,28 +229,33 @@ class Worker extends EventEmitter {
    * @private
    * @return {function} entrypoint function to the middleware stack
    */
-  createExecutor() {
+  createExecutor(): (ctx: MiddlewareContext) => {} {
     const { registry } = this;
     return compose([
       ...this.middleware,
-      function getJobFnFromRegistry(ctx, next) {
-        const { job: { jobtype } } = ctx;
+      function getJobFnFromRegistry(ctx: MiddlewareContext, next: NextFunction) {
+        const {
+          job: { jobtype },
+        } = ctx;
         ctx.fn = registry[jobtype];
 
         if (!ctx.fn) throw new Error(`No jobtype registered: ${jobtype}`);
 
         return next();
       },
-      async function callJobFn(ctx, next) {
-        const { fn, job: { args } } = ctx;
+      async function callJobFn(ctx: MiddlewareContext, next: NextFunction) {
+        const {
+          fn,
+          job: { args },
+        } = ctx;
         const thunkOrPromise = await fn(...args);
-        if (typeof thunkOrPromise === 'function') {
+        if (typeof thunkOrPromise === "function") {
           await thunkOrPromise(ctx);
         } else {
           await thunkOrPromise;
         }
         return next();
-      }
+      },
     ]);
   }
 
@@ -236,22 +265,22 @@ class Worker extends EventEmitter {
    *
    * @private
    * @param  {JobPayload} job the job payload from the server
-   * @return {string} 'ack' or 'fail' depending on job handling result
+   * @return {Promise<string>} 'ack' or 'fail' depending on job handling resu
    */
-  async handle(job) {
+  async handle(job: JobPayload): Promise<string> {
     const { jid } = job;
     try {
       debug(`executing ${jid}`);
       await this.execute({ job });
       await this.client.ack(jid);
       debug(`ACK ${jid}`);
-      return 'ack';
+      return "ack";
     } catch (e) {
       const error = wrapNonErrors(e);
       await this.client.fail(jid, error);
-      this.emit('fail', { job, error: e });
+      this.emit("fail", { job, error: e });
       debug(`FAIL ${jid}`);
-      return 'fail';
+      return "fail";
     }
   }
 
@@ -261,17 +290,15 @@ class Worker extends EventEmitter {
   trapSignals() {
     // istanbul ignore next
     process
-      .once('SIGTERM', () => this.stop())
-      .once('SIGTSTP', () => this.quiet())
-      .once('SIGINT', () => this.stop());
+      .once("SIGTERM", () => this.stop())
+      .once("SIGTSTP", () => this.quiet())
+      .once("SIGINT", () => this.stop());
   }
 
   static removeSignalHandlers() {
     process
-      .removeAllListeners('SIGTERM')
-      .removeAllListeners('SIGTSTP')
-      .removeAllListeners('SIGINT');
+      .removeAllListeners("SIGTERM")
+      .removeAllListeners("SIGTSTP")
+      .removeAllListeners("SIGINT");
   }
 }
-
-module.exports = Worker;

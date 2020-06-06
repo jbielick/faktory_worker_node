@@ -8,7 +8,7 @@ const crypto = require('crypto');
  * @return {String}            the password hash
  * @private
  */
-module.exports = function hash(password, salt, iterations) {
+export default function hash(password: string, salt: string, iterations: number): string {
   let current = crypto.createHash('sha256').update(`${password}${salt}`);
 
   for (let i = 1; i < iterations; i += 1) {

@@ -1,0 +1,20 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./lib",
+    "allowJs": true,
+    "target": "ES6",
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitThis": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/__tests__"
+  ]
+}
