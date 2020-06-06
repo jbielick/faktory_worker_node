@@ -1,4 +1,6 @@
 const encode = require('./encode');
+import { JobType } from './types';
+import Client from './client';
 
 const MUTATE = 'MUTATE';
 
@@ -6,18 +8,33 @@ const MUTATE = 'MUTATE';
  * commands
  * @private
  */
-const CLEAR = 'clear';
-const KILL = 'kill';
-const DISCARD = 'discard';
-const REQUEUE = 'requeue';
+enum Verb {
+  CLEAR = 'clear',
+  KILL = 'kill',
+  DISCARD = 'discard',
+  REQUEUE = 'requeue',
+}
 
 /**
  * targets
  * @private
  */
-const RETRIES = 'retries';
-const SCHEDULED = 'scheduled';
-const DEAD = 'dead';
+enum Target {
+  RETRIES = 'retries',
+  SCHEDULED = 'scheduled',
+  DEAD = 'dead',
+}
+
+export const SCHEDULED = Target.SCHEDULED;
+export const RETRIES = Target.RETRIES;
+export const DEAD = Target.DEAD;
+
+export type Filter = {
+  jobtype?: JobType;
+  pattern?: string;
+  jids?: Array<string>;
+  regexp?: string;
+}
 
 /**
  * A wrapper for the [Mutate API](https://github.com/contribsys/faktory/wiki/Mutate-API)
@@ -28,10 +45,15 @@ const DEAD = 'dead';
  * **They should not be used as part of your application logic.**
  */
 class Mutation {
+  client: Client;
+  target: Target;
+  filter: Filter;
+  cmd: Verb;
+
   /**
    * @param {Client} client
    */
-  constructor(client) {
+  constructor(client: Client) {
     this.client = client;
     this.filter = {};
   }
@@ -47,11 +69,11 @@ class Mutation {
    * @example
    * client.dead.ofType('SendEmail').discard();
    */
-  ofType(type) {
-    if (typeof type !== 'string') {
+  ofType(jobtype: JobType) {
+    if (typeof jobtype !== 'string') {
       throw new Error('jobtype given to ofType must be a string');
     }
-    this.filter.jobtype = type;
+    this.filter.jobtype = jobtype;
     return this;
   }
 
@@ -65,7 +87,7 @@ class Mutation {
    * @example
    * await client.retries.withJids('1234').requeue();
    */
-  withJids(...jids) {
+  withJids(...jids: Array<string>) {
     const ids = Array.isArray(jids[0]) ? jids[0] : jids;
     this.filter.jids = ids;
     return this;
@@ -85,7 +107,7 @@ class Mutation {
    * @example
    * await client.retries.matching("*uid:12345*").kill();
    */
-  matching(pattern) {
+  matching(pattern: string) {
     if (typeof pattern !== 'string') {
       throw new Error(`
 Argument given to matching() must be a redis SCAN compatible pattern string,
@@ -111,7 +133,7 @@ https://redis.io/commands/scan
    * set entirely **and any filtering added does not apply**.
    */
   clear() {
-    this.cmd = CLEAR;
+    this.cmd = Verb.CLEAR;
     return this.send();
   }
 
@@ -119,7 +141,7 @@ https://redis.io/commands/scan
    * Executes a *kill* mutation. Jobs that are killed are sent to the dead set.
    */
   kill() {
-    this.cmd = KILL;
+    this.cmd = Verb.KILL;
     return this.send();
   }
 
@@ -127,7 +149,7 @@ https://redis.io/commands/scan
    * Executes a *discard* mutation. Jobs that are discarded are permanently deleted.
    */
   discard() {
-    this.cmd = DISCARD;
+    this.cmd = Verb.DISCARD;
     return this.send();
   }
 
@@ -136,7 +158,7 @@ https://redis.io/commands/scan
    * original queue for processing.
    */
   requeue() {
-    this.cmd = REQUEUE;
+    this.cmd = Verb.REQUEUE;
     return this.send();
   }
 
@@ -144,15 +166,11 @@ https://redis.io/commands/scan
    * @private
    */
   send() {
-    return this.client.sendWithAssert([
-      MUTATE,
-      encode(this.toJSON())
-    ], 'OK');
+    return this.client.sendWithAssert(
+      [MUTATE, encode(this.toJSON())],
+      "OK"
+    );
   }
 }
 
-Mutation.SCHEDULED = SCHEDULED;
-Mutation.RETRIES = RETRIES;
-Mutation.DEAD = DEAD;
-
-module.exports = Mutation;
+export default Mutation;

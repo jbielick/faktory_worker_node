@@ -1,4 +1,6 @@
 const uuid = require('uuid/v4');
+import { JobPayload } from './types';
+import Client from './client';
 
 /**
  * A class wrapping a {@link external:JobPayload|JobPayload}
@@ -14,14 +16,16 @@ const uuid = require('uuid/v4');
  * const client = await faktory.connect();
  * const job = client.job('SendWelcomeEmail', id);
  */
-class Job {
+export default class Job {
+  client: Client;
+  payload: JobPayload;
   /**
    * Creates a job
    *
    * @param  {string} jobtype {@link external:Jobtype|Jobtype} string
    * @param  {Client} [client]  a client to use for communicating to the server (if calling push)
    */
-  constructor(jobtype, client) {
+  constructor(jobtype: string, client: Client) {
     if (!jobtype) throw new Error('must provide jobtype');
     this.client = client;
     this.payload = Object.assign({
@@ -42,7 +46,6 @@ class Job {
    */
   set jid(value) {
     this.payload.jid = value;
-    return value;
   }
 
   get jobtype() {
@@ -51,7 +54,6 @@ class Job {
 
   set jobtype(value) {
     this.payload.jobtype = value;
-    return value;
   }
 
   get queue() {
@@ -66,7 +68,6 @@ class Job {
    */
   set queue(value) {
     this.payload.queue = value;
-    return value;
   }
 
   get args() {
@@ -81,7 +82,6 @@ class Job {
    */
   set args(value) {
     this.payload.args = value;
-    return value;
   }
 
   get priority() {
@@ -96,7 +96,6 @@ class Job {
    */
   set priority(value) {
     this.payload.priority = value;
-    return value;
   }
 
   get retry() {
@@ -111,7 +110,6 @@ class Job {
    */
   set retry(value) {
     this.payload.retry = value;
-    return value;
   }
 
   get at() {
@@ -127,7 +125,6 @@ class Job {
   set at(value) {
     const string = typeof value === 'object' ? value.toISOString() : value;
     this.payload.at = string;
-    return string;
   }
 
   get reserveFor() {
@@ -142,7 +139,6 @@ class Job {
    */
   set reserveFor(value) {
     this.payload.reserve_for = value;
-    return value;
   }
 
   get custom() {
@@ -157,7 +153,6 @@ class Job {
    */
   set custom(value) {
     this.payload.custom = value;
-    return value;
   }
 
   /**
@@ -199,5 +194,3 @@ class Job {
     return uuid();
   }
 }
-
-module.exports = Job;

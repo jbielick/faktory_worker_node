@@ -3,11 +3,11 @@
 const program = require('commander');
 const { version } = require('../package.json');
 
-function collect(val, memo) {
+function collect(val: string, memo: Array<string>) {
   return memo.concat(val);
 }
 
-function collectSplit(val, memo) {
+function collectSplit(val: string, memo: Array<String>) {
   return memo.concat(val.split(','));
 }
 

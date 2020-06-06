@@ -2,10 +2,12 @@
   "name": "faktory-worker",
   "version": "3.3.8",
   "description": "A faktory worker framework for node apps",
-  "main": "index.js",
+  "main": "lib/faktory.js",
   "author": "Josh Bielick <jbielick@gmail.com>",
   "license": "MIT",
   "scripts": {
+    "watch": "tsc -w",
+    "build": "tsc",
     "test": "nyc --cache ava --serial",
     "coverage": "nyc report --reporter=html",
     "lint": "eslint lib",
@@ -40,6 +42,7 @@
     "node": ">=7"
   },
   "devDependencies": {
+    "@types/node": "^14.0.11",
     "ava": "^0.25.0",
     "coveralls": "3.1.0",
     "eslint": "^4.10",
@@ -49,7 +52,8 @@
     "jsdoc": "3.6.3",
     "jsdoc-to-markdown": "^3.1.0-1",
     "nyc": "13.3.0",
-    "sinon": "9.0.2"
+    "sinon": "9.0.2",
+    "typescript": "^3.9.5"
   },
   "dependencies": {
     "commander": "2.20.0",

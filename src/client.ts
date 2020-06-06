@@ -1,19 +1,51 @@
-const debug = require('debug')('faktory-worker:client');
-const { URL } = require('url');
-const querystring = require('querystring');
-const os = require('os');
-const { createPool } = require('generic-pool');
-const heartDebug = require('debug')('faktory-worker:client:heart');
 
-const encode = require('./encode');
-const Job = require('./job');
-const Mutation = require('./mutation');
-const hash = require('./hash');
-const ConnectionFactory = require('./connection-factory');
+const debug = require("debug")("faktory-worker:client");
+const { URL } = require("url");
+const querystring = require("querystring");
+const os = require("os");
+const { createPool } = require("generic-pool");
+const heartDebug = require("debug")("faktory-worker:client:heart");
+
+const encode = require("./encode");
+import Job from './job';
+const hash = require("./hash");
+import Mutation, { RETRIES, DEAD, SCHEDULED } from './mutation';
+import Connection, { ConnectionOptions, Greeting } from "./connection";
+import ConnectionFactory from "./connection-factory";
+import { JobType, Command, JobPayload } from "./types";
 
 const FAKTORY_PROTOCOL_VERSION = 2;
-const FAKTORY_PROVIDER = process.env.FAKTORY_PROVIDER || 'FAKTORY_URL';
-const FAKTORY_URL = process.env[FAKTORY_PROVIDER] || 'tcp://localhost:7419';
+const FAKTORY_PROVIDER = process.env.FAKTORY_PROVIDER || "FAKTORY_URL";
+const FAKTORY_URL = process.env[FAKTORY_PROVIDER] || "tcp://localhost:7419";
+
+export type ClientOptions = {
+  host?: string;
+  port?: string | number;
+  password?: string;
+  url?: string;
+  wid?: string;
+  labels?: string[];
+  poolSize?: number;
+};
+
+export type JSONable = {
+  toJSON(): object;
+};
+
+export type Hello = {
+  hostname: string;
+  v: number;
+  wid?: string;
+  labels?: string[];
+  pid?: number;
+  pwdhash?: string;
+};
+
+interface Pool {
+  use(callback: (conn: Connection) => {}): Promise<any>;
+  drain(): Promise<any>;
+  clear(): Promise<any>;
+}
 
 /**
  * A client connection handle for interacting with the faktory server. Holds a pool of 1 or more
@@ -26,7 +58,14 @@ const FAKTORY_URL = process.env[FAKTORY_PROVIDER] || 'tcp://localhost:7419';
  * const job = await client.fetch('default');
  *
  */
-class Client {
+export default class Client {
+  password?: string;
+  labels: string[];
+  wid?: string;
+  connectionFactory: ConnectionFactory;
+  pool: Pool;
+
+
   /**
    * Creates a Client with a connection pool
    *
@@ -43,7 +82,7 @@ class Client {
    *                                       for this client
    * @param {number} [options.poolSize=10] the maxmimum size of the connection pool
    */
-  constructor(options = {}) {
+  constructor(options: ClientOptions = {}) {
     const url = new URL(options.url || FAKTORY_URL);
 
     this.password = options.password || querystring.unescape(url.password);
@@ -65,7 +104,7 @@ class Client {
     });
   }
 
-  static assertVersion(version) {
+  static assertVersion(version: number) {
     if (version !== FAKTORY_PROTOCOL_VERSION) {
       throw new Error(`
   Client / server version mismatch
@@ -81,9 +120,9 @@ class Client {
    * not available, one will be created. This method exists to ensure connection is possible
    * if you need to do so. You can think of this like {@link https://godoc.org/github.com/jmoiron/sqlx#MustConnect|sqlx#MustConnect}
    *
-   * @return {Promise.<self>} resolves when a connection is opened
+   * @return {Promise.<Client>} resolves when a connection is opened
    */
-  async connect() {
+  async connect(): Promise<Client> {
     const conn = await this.connectionFactory.create();
     await this.connectionFactory.destroy(conn);
     return this;
@@ -93,7 +132,7 @@ class Client {
    * Closes the connection to the server
    * @return {Promise.<undefined>}
    */
-  async close() {
+  async close(): Promise<undefined> {
     await this.pool.drain();
     return this.pool.clear();
   }
@@ -105,23 +144,20 @@ class Client {
    * @return {Job}            a job builder with attached Client for PUSHing
    * @see  Job
    */
-  job(jobtype, ...args) {
+  job(jobtype: JobType, ...args: any[]) {
     const job = new Job(jobtype, this);
     job.args = args;
     return job;
   }
 
-  handshake(conn, greeting) {
-    debug('handshake');
+  handshake(conn: Connection, greeting: Greeting) {
+    debug("handshake");
 
     Client.assertVersion(greeting.v);
 
     return conn.sendWithAssert(
-      [
-        'HELLO',
-        encode(this.buildHello(greeting))
-      ],
-      'OK'
+      ["HELLO", encode(this.buildHello(greeting))],
+      "OK"
     );
   }
 
@@ -132,10 +168,10 @@ class Client {
    * @return {object}            the hello object to send back to the server
    * @private
    */
-  buildHello({ s: salt, i: iterations }) {
-    const hello = {
+  buildHello({ s: salt, i: iterations }: Greeting): Hello {
+    const hello: Hello = {
       hostname: os.hostname(),
-      v: FAKTORY_PROTOCOL_VERSION
+      v: FAKTORY_PROTOCOL_VERSION,
     };
 
     if (this.wid) {
@@ -159,21 +195,21 @@ class Client {
    * @param {...*} args arguments to {@link Connection.send}
    * @see Connection.send
    */
-  send(command) {
-    return this.pool.use(conn => conn.send(command));
+  send(command: Command) {
+    return this.pool.use((conn: Connection) => conn.send(command));
   }
 
-  sendWithAssert(command, assertion) {
-    return this.pool.use(conn => conn.sendWithAssert(command, assertion));
+  sendWithAssert(command: Command, assertion: string) {
+    return this.pool.use((conn) => conn.sendWithAssert(command, assertion));
   }
 
   /**
    * Fetches a job payload from the server from one of ...queues
    * @param  {...String} queues list of queues to pull a job from
-   * @return {Promise.<object>|null}           a job payload if one is available, otherwise null
+   * @return {Promise.<object|null>}           a job payload if one is available, otherwise null
    */
-  async fetch(...queues) {
-    const response = await this.send(['FETCH', ...queues]);
+  async fetch(...queues: string[]): Promise<JobPayload|null> {
+    const response = await this.send(["FETCH", ...queues]);
     return JSON.parse(response);
   }
 
@@ -183,10 +219,10 @@ class Client {
    *                           may return a state string when the server has a signal
    *                           to send this client (`quiet`, `terminate`)
    */
-  async beat() {
-    heartDebug('BEAT');
-    const response = await this.send(['BEAT', encode({ wid: this.wid })]);
-    if (response[0] === '{') {
+  async beat(): Promise<string> {
+    heartDebug("BEAT");
+    const response = await this.send(["BEAT", encode({ wid: this.wid })]);
+    if (response[0] === "{") {
       return JSON.parse(response).state;
     }
     return response;
@@ -197,10 +233,14 @@ class Client {
    * @param  {Job|Object} job job payload to push
    * @return {Promise.<string>}         the jid for the pushed job
    */
-  async push(job) {
-    const payload = job.toJSON ? job.toJSON() : job;
-    const payloadWithDefaults = Object.assign({ jid: Job.jid() }, Job.defaults, payload);
-    await this.sendWithAssert(['PUSH', encode(payloadWithDefaults)], 'OK');
+  async push(job: JSONable | object): Promise<string> {
+    const payload = ("toJSON" in job) ? (job as JSONable).toJSON() : job;
+    const payloadWithDefaults = Object.assign(
+      { jid: Job.jid() },
+      Job.defaults,
+      payload
+    );
+    await this.sendWithAssert(["PUSH", encode(payloadWithDefaults)], "OK");
     return payloadWithDefaults.jid;
   }
 
@@ -208,16 +248,16 @@ class Client {
    * Sends a FLUSH to the server
    * @return {Promise.<string>} resolves with the server's response text
    */
-  async flush() {
-    return this.send(['FLUSH']);
+  async flush(): Promise<string> {
+    return this.send(["FLUSH"]);
   }
 
   /**
    * Sends an INFO command to the server
    * @return {Promise.<object>} the server's INFO response object
    */
-  async info() {
-    return JSON.parse(await this.send(['INFO']));
+  async info(): Promise<object> {
+    return JSON.parse(await this.send(["INFO"]));
   }
 
   /**
@@ -225,8 +265,8 @@ class Client {
    * @param  {String} jid the jid of the job to acknowledge
    * @return {Promise.<string>}     the server's response text
    */
-  async ack(jid) {
-    return this.sendWithAssert(['ACK', encode({ jid })], 'OK');
+  async ack(jid: string): Promise<string> {
+    return this.sendWithAssert(["ACK", encode({ jid })], "OK");
   }
 
   /**
@@ -235,35 +275,36 @@ class Client {
    * @param  {Error} e   an error object that caused the job to fail
    * @return {Promise.<string>}     the server's response text
    */
-  fail(jid, e) {
-    return this.sendWithAssert([
-      'FAIL',
-      encode({
-        message: e.message,
-        errtype: e.code,
-        backtrace: (e.stack || '').split('\n').slice(0, 100),
-        jid
-      })
-    ], 'OK');
+  fail(jid: string, e: Error): Promise<string> {
+    return this.sendWithAssert(
+      [
+        "FAIL",
+        encode({
+          message: e.message,
+          errtype: (e as any).code,
+          backtrace: (e.stack || "").split("\n").slice(0, 100),
+          jid,
+        }),
+      ],
+      "OK"
+    );
   }
 
   get retries() {
     const mutation = new Mutation(this);
-    mutation.target = Mutation.RETRIES;
+    mutation.target = RETRIES;
     return mutation;
   }
 
   get scheduled() {
     const mutation = new Mutation(this);
-    mutation.target = Mutation.SCHEDULED;
+    mutation.target = SCHEDULED;
     return mutation;
   }
 
   get dead() {
     const mutation = new Mutation(this);
-    mutation.target = Mutation.DEAD;
+    mutation.target = DEAD;
     return mutation;
   }
 }
-
-module.exports = Client;

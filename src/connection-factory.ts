@@ -1,5 +1,5 @@
 const debug = require('debug')('faktory-worker:connection-pool');
-const Connection = require('./connection');
+import Connection from './connection';
 const sleep = require('./sleep');
 
 /**
@@ -7,7 +7,13 @@ const sleep = require('./sleep');
  * connected before lending them
  * @private
  */
-class ConnectionFactory {
+export default class ConnectionFactory {
+  host: string;
+  port: string | number;
+  handshake: Function;
+  attempts: number;
+  onConnectionError: (err: Error) => {};
+
   /**
    * @param {object} options
    * @param {string} options.host host to connect to
@@ -15,7 +21,7 @@ class ConnectionFactory {
    * @param {function} handshake a function to perform the handshake for a connection
    *                             after it connects
    */
-  constructor({ host, port, handshake }) {
+  constructor({ host, port, handshake }: { host: string, port: string | number, handshake: Function}) {
     this.host = host;
     this.port = port;
     this.handshake = handshake;
@@ -48,7 +54,7 @@ class ConnectionFactory {
   /**
    * Destroys a connection from the pool
    */
-  destroy(connection) {
+  destroy(connection: Connection) {
     debug('-1');
     connection.on('close', () => connection.removeAllListeners());
     return connection.close();
@@ -57,9 +63,7 @@ class ConnectionFactory {
   /**
    * Validates that a connection from the pool is ready
    */
-  validate(connection) {
+  validate(connection: Connection) {
     return connection.connected;
   }
 }
-
-module.exports = ConnectionFactory;

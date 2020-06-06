@@ -4,7 +4,7 @@
  * @return {Error}        an error with a warning about throwing non-errors
  * @private
  */
-module.exports = function wrapNonErrors(object) {
+export default function wrapNonErrors(object: string | Error | undefined): Error {
   if (object instanceof Error) return object;
   console.warn(`
 Job failed without providing an error.
