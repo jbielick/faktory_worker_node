@@ -2,19 +2,37 @@ import { Socket } from "net";
 const assert = require('assert');
 const EventEmitter = require('events');
 const debug = require('debug')('faktory-worker:connection');
-import { Command } from './types';
+
 import Parser from "./parser";
 
 const SOCKET_TIMEOUT = 10000;
+
+/**
+ * A command to send the server in array form
+ *
+ * @typedef {string[]} Command
+ * @example
+ *
+ * // multiple string arguments
+ * ['FETCH', 'critical', 'default']
+ *
+ * // json string as an argument
+ * ['PUSH', '{"jid": "123"}']
+ *
+ * // single string argument
+ * ['ACK', '123']
+ */
+export type Command = Array<string>;
 
 export type Greeting = {
   v: number;
   s: string;
   i: number;
 };
+
 export type ConnectionOptions = {
-  host: string;
-  port: string | number;
+  host?: string;
+  port?: string | number;
   password?: string;
 }
 
@@ -35,7 +53,7 @@ export default class Connection extends EventEmitter {
    * @param {Number} port the port to connect on
    * @param {String} host the hostname to connect to
    */
-  constructor(port: string | number, host: string) {
+  constructor(port?: string | number, host?: string) {
     super();
     this.host = host;
     this.port = port;

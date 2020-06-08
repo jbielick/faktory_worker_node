@@ -8,9 +8,11 @@
   "scripts": {
     "watch": "tsc -w",
     "build": "tsc",
-    "test": "nyc --cache ava --serial",
+    "clean": "rm -rf lib/*",
+    "test": "nyc --cache ava src/__tests__/*",
+    "test:watch": "npm run test -- -w",
     "coverage": "nyc report --reporter=html",
-    "lint": "eslint lib",
+    "lint": "eslint src",
     "htmldocs": "jsdoc . lib -d docs --readme README.md --pedantic",
     "docs": "jsdoc2md --files lib/*.js --template docs/template.hbs > docs/api.md",
     "preversion": "npm run lint && npm run test && npm run docs",
@@ -36,14 +38,22 @@
   },
   "ava": {
     "verbose": true,
-    "timeout": "5s"
+    "serial": true,
+    "timeout": "5s",
+    "typescript": {
+      "rewritePaths": {
+        "src/": "lib/"
+      }
+    }
   },
   "engines": {
     "node": ">=7"
   },
   "devDependencies": {
+    "@ava/typescript": "^1.1.1",
     "@types/node": "^14.0.11",
-    "ava": "^0.25.0",
+    "@types/uuid": "^8.0.0",
+    "ava": "^3.8.2",
     "coveralls": "3.1.0",
     "eslint": "^4.10",
     "eslint-config-airbnb-base": "13.2.0",

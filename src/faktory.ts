@@ -2,12 +2,8 @@ const debug = require("debug")("faktory-worker");
 const assert = require("assert");
 
 import Client from "./client";
-import Worker from './worker';
+import Worker, { WorkerOptions } from './worker';
 import { JobType, Registry, MiddlewareFunction, JobFunction } from "./types";
-
-export type FaktoryControlCreator = {
-  (): FaktoryControl;
-};
 
 export interface FaktoryControl {
   registry: Registry;
@@ -15,8 +11,12 @@ export interface FaktoryControl {
   middleware: MiddlewareFunction[];
   register(name: JobType, fn: JobFunction): FaktoryControl;
   connect(...arg0: any[]): Promise<Client>;
-  work(options: WorkerOptions): Promise<Worker>;
+  work(options?: WorkerOptions): Promise<Worker>;
   stop(): Promise<any>;
+};
+
+export type FaktoryControlCreator = {
+  (): FaktoryControl;
 };
 
 /**
@@ -26,7 +26,7 @@ export interface FaktoryControl {
  * @private
  * @return {FaktoryControl}
  */
-const faktory = (): FaktoryControl => {
+const createControl: FaktoryControlCreator = (): FaktoryControl => {
   const middleware: MiddlewareFunction[] = [];
   const registry: Registry = {};
   let worker: Worker | undefined;
@@ -158,5 +158,12 @@ const faktory = (): FaktoryControl => {
   };
 };
 
-// export type FaktoryControlCreator = FaktoryControl | FaktoryControlFactory;
-export default Object.assign(faktory, faktory(), { Client, Worker });
+export {
+  Worker, Client
+}
+
+export default <FaktoryControlCreator & FaktoryControl>(
+  Object.assign(createControl, createControl())
+);
+
+Object.assign(exports, createControl());

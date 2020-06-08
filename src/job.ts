@@ -1,6 +1,46 @@
 const uuid = require('uuid/v4');
-import { JobPayload } from './types';
 import Client from './client';
+
+export interface JobCustomParams {
+  [propName: string]: any;
+}
+
+/**
+ * A work unit that can be scheduled by the faktory work server and executed by clients
+ *
+ * @typedef {object} JobPayload
+ * @see  {@link https://github.com/contribsys/faktory/wiki/The-Job-Payload}
+ * @external
+ * @property {string} [jid=uuid()] globally unique ID for the job.
+ * @property {external:Jobtype} jobtype
+ * @property {string} [queue=default] which job queue to push this job onto.
+ * @property {array} [args=[]] parameters the worker should use when executing the job.
+ * @property {number} [priority=5] higher priority jobs are dequeued before lower priority jobs.
+ * @property {number} [retry=25] number of times to retry this job if it fails. 0 discards the
+ *                               failed job, -1 saves the failed job to the dead set.
+ * @property {external:RFC3339_DateTime} [at] run the job at approximately this time; immediately if blank
+ * @property {number} [reserve_for=1800] number of seconds a job may be held by a worker before it
+ *                                       is considered failed.
+ * @property {?object} custom provides additional context to the worker executing the job.
+ * @see  {@link https://github.com/contribsys/faktory/blob/master/docs/protocol-specification.md#work-units|Faktory Protocol Specification - Work Units}
+ */
+export type PartialJobPayload = {
+  jid?: string;
+  jobtype: string;
+  queue: string;
+  args: any[];
+  priority?: number;
+  retry?: number;
+  custom?: JobCustomParams;
+  at?: Date | string;
+  reserve_for?: number;
+};
+
+export type JobPayload = PartialJobPayload & {
+  jid: string;
+  queue: string;
+  args: any[];
+};
 
 /**
  * A class wrapping a {@link external:JobPayload|JobPayload}
@@ -34,7 +74,7 @@ export default class Job {
     }, Job.defaults);
   }
 
-  get jid() {
+  get jid(): string {
     return this.payload.jid;
   }
 
@@ -44,19 +84,19 @@ export default class Job {
    * @param  {string} value the >8 length jid
    * @see  external:JobPayload
    */
-  set jid(value) {
+  set jid(value: string) {
     this.payload.jid = value;
   }
 
-  get jobtype() {
+  get jobtype(): string {
     return this.payload.jobtype;
   }
 
-  set jobtype(value) {
+  set jobtype(value: string) {
     this.payload.jobtype = value;
   }
 
-  get queue() {
+  get queue(): string {
     return this.payload.queue;
   }
 
@@ -66,11 +106,11 @@ export default class Job {
    * @param  {string} value queue name
    * @see  external:JobPayload
    */
-  set queue(value) {
+  set queue(value: string) {
     this.payload.queue = value;
   }
 
-  get args() {
+  get args(): any[] {
     return this.payload.args;
   }
 
@@ -80,7 +120,7 @@ export default class Job {
    * @param  {Array} value array of positional arguments
    * @see  external:JobPayload
    */
-  set args(value) {
+  set args(value: any[]) {
     this.payload.args = value;
   }
 
@@ -98,7 +138,7 @@ export default class Job {
     this.payload.priority = value;
   }
 
-  get retry() {
+  get retry(): number | undefined {
     return this.payload.retry;
   }
 
@@ -108,11 +148,11 @@ export default class Job {
    * @param  {number} value {@see external:JobPayload}
    * @see  external:JobPayload
    */
-  set retry(value) {
+  set retry(value: number | undefined) {
     this.payload.retry = value;
   }
 
-  get at() {
+  get at(): Date | string | undefined {
     return this.payload.at;
   }
 
@@ -122,7 +162,7 @@ export default class Job {
    * @param  {Date|string} value the date object or RFC3339 timestamp string
    * @see  external:JobPayload
    */
-  set at(value) {
+  set at(value: Date | string | undefined) {
     const string = typeof value === 'object' ? value.toISOString() : value;
     this.payload.at = string;
   }
@@ -137,7 +177,7 @@ export default class Job {
    * @param  {number} value
    * @see  external:JobPayload
    */
-  set reserveFor(value) {
+  set reserveFor(value: number | undefined) {
     this.payload.reserve_for = value;
   }
 
@@ -151,7 +191,7 @@ export default class Job {
    * @param  {object} value the custom data
    * @see  external:JobPayload
    */
-  set custom(value) {
+  set custom(value: object | undefined) {
     this.payload.custom = value;
   }
 
@@ -162,7 +202,7 @@ export default class Job {
    *                      @link external:JobPayload|JobPayload}
    * @see  external:JobPayload
    */
-  toJSON() {
+  toJSON(): PartialJobPayload {
     return Object.assign({}, this.payload);
   }
 
@@ -172,7 +212,7 @@ export default class Job {
    *
    * @return {string} return of client.push(job)
    */
-  push() {
+  push(): Promise<string> {
     return this.client.push(this);
   }
 
@@ -190,7 +230,7 @@ export default class Job {
    *
    * @return {string} a uuid/v4 string
    */
-  static jid() {
+  static jid(): string {
     return uuid();
   }
 }

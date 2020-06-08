@@ -1,6 +1,6 @@
 const debug = require('debug')('faktory-worker:connection-pool');
 import Connection from './connection';
-const sleep = require('./sleep');
+import sleep from './sleep';
 
 /**
  * pools connections to the faktory server, ensuring that they're

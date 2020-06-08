@@ -1,4 +1,4 @@
-const encode = require('./encode');
+import encode from './encode';
 import { JobType } from './types';
 import Client from './client';
 
@@ -87,8 +87,13 @@ class Mutation {
    * @example
    * await client.retries.withJids('1234').requeue();
    */
-  withJids(...jids: Array<string>) {
-    const ids = Array.isArray(jids[0]) ? jids[0] : jids;
+  withJids(...jids: string[] | [string[]]) {
+    let ids: string[];
+    if (Array.isArray(jids[0])) {
+      ids = jids[0];
+    } else {
+      ids = <string[]>jids;
+    }
     this.filter.jids = ids;
     return this;
   }

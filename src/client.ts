@@ -1,18 +1,19 @@
 
 const debug = require("debug")("faktory-worker:client");
-const { URL } = require("url");
+import { URL } from 'url';
 const querystring = require("querystring");
 const os = require("os");
 const { createPool } = require("generic-pool");
 const heartDebug = require("debug")("faktory-worker:client:heart");
 
-const encode = require("./encode");
-import Job from './job';
-const hash = require("./hash");
+import encode from './encode';
+import Job, { JobPayload } from './job';
+import hash from './hash';
 import Mutation, { RETRIES, DEAD, SCHEDULED } from './mutation';
-import Connection, { ConnectionOptions, Greeting } from "./connection";
+import Connection, { Greeting } from "./connection";
 import ConnectionFactory from "./connection-factory";
-import { JobType, Command, JobPayload } from "./types";
+import { JobType } from "./types";
+import { Command } from './connection';
 
 const FAKTORY_PROTOCOL_VERSION = 2;
 const FAKTORY_PROVIDER = process.env.FAKTORY_PROVIDER || "FAKTORY_URL";
@@ -45,7 +46,30 @@ interface Pool {
   use(callback: (conn: Connection) => {}): Promise<any>;
   drain(): Promise<any>;
   clear(): Promise<any>;
-}
+  _config: {
+    max: number;
+  }
+};
+
+export type ServerInfo = {
+  server_utc_time: string;
+  faktory: {
+    queues: {
+      [name: string]: number;
+    }
+    tasks: {
+      Retries: {
+        size: number;
+      }
+      Dead: {
+        size: number;
+      }
+      Scheduled: {
+        size: number;
+      }
+    }
+  }
+};
 
 /**
  * A client connection handle for interacting with the faktory server. Holds a pool of 1 or more
@@ -256,7 +280,7 @@ export default class Client {
    * Sends an INFO command to the server
    * @return {Promise.<object>} the server's INFO response object
    */
-  async info(): Promise<object> {
+  async info(): Promise<ServerInfo> {
     return JSON.parse(await this.send(["INFO"]));
   }
 
