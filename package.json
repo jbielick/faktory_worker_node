@@ -52,7 +52,7 @@
     "sinon": "9.0.2"
   },
   "dependencies": {
-    "commander": "2.20.0",
+    "commander": "5.1.0",
     "debug": "^4.1.0",
     "generic-pool": "3.7.1",
     "koa-compose": "^4.0.0",
