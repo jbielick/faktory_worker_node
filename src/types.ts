@@ -1,4 +1,4 @@
-import Job from './job';
+import { JobPayload } from './job';
 
 /**
  * Discriminator used by a worker to decide how to execute a job. This will be the name you
@@ -42,7 +42,8 @@ export type RFC3339_DateTime = string;
  *   // does something meaningful
  * }
  */
-export type JobFunction = (...arg0: any[]) => JobThunk | void;
+export type JobFunctionWrapper = (...arg0: any[]) => MiddlewareFunction;
+export type JobFunction = (...arg0: any[]) => any;
 
 /**
  * An after-connect initial message from the server to handshake the connection
@@ -84,7 +85,7 @@ export interface NextFunction {
 };
 
 export interface MiddlewareFunction {
-  (ctx: MiddlewareContext, next: NextFunction): void;
+  (ctx: MiddlewareContext, next: NextFunction): any;
   _name?: string;
 }
 
@@ -121,9 +122,10 @@ export type JobThunk = (...arg0: any) => JobFunction;
  * @property {object} Context.job the job payload
  * @property {function} Context.fn a reference to the job function
  */
-export type MiddlewareContext = {
+export interface MiddlewareContext {
   job: JobPayload;
   fn: JobFunction;
+  [propName: string]: any;
 }
 
 /**
@@ -144,57 +146,5 @@ export type MiddlewareContext = {
  * }
  */
 export type Registry = {
-  [JobType: string]: JobFunction;
-}
-
-/**
- * A command to send the server in array form
- *
- * @typedef {string[]} Command
- * @example
- *
- * // multiple string arguments
- * ['FETCH', 'critical', 'default']
- *
- * // json string as an argument
- * ['PUSH', '{"jid": "123"}']
- *
- * // single string argument
- * ['ACK', '123']
- */
-export type Command = Array<string>;
-
-export interface JobCustomParams {
-  [propName: string]: any;
-}
-
-/**
- * A work unit that can be scheduled by the faktory work server and executed by clients
- *
- * @typedef {object} JobPayload
- * @see  {@link https://github.com/contribsys/faktory/wiki/The-Job-Payload}
- * @external
- * @property {string} [jid=uuid()] globally unique ID for the job.
- * @property {external:Jobtype} jobtype
- * @property {string} [queue=default] which job queue to push this job onto.
- * @property {array} [args=[]] parameters the worker should use when executing the job.
- * @property {number} [priority=5] higher priority jobs are dequeued before lower priority jobs.
- * @property {number} [retry=25] number of times to retry this job if it fails. 0 discards the
- *                               failed job, -1 saves the failed job to the dead set.
- * @property {external:RFC3339_DateTime} [at] run the job at approximately this time; immediately if blank
- * @property {number} [reserve_for=1800] number of seconds a job may be held by a worker before it
- *                                       is considered failed.
- * @property {?object} custom provides additional context to the worker executing the job.
- * @see  {@link https://github.com/contribsys/faktory/blob/master/docs/protocol-specification.md#work-units|Faktory Protocol Specification - Work Units}
- */
-export type JobPayload = {
-  jid: string;
-  jobtype: string;
-  queue: string;
-  args: Array<any>;
-  priority?: number;
-  retry?: number;
-  custom?: JobCustomParams;
-  at?: Date | string;
-  reserve_for?: number;
+  [JobType: string]: JobFunctionWrapper | JobFunction;
 };

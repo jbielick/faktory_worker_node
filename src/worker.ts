@@ -1,17 +1,23 @@
-import { MiddlewareFunction, Registry, JobPayload, MiddlewareContext, NextFunction } from "./types";
+import {
+  MiddlewareFunction,
+  Registry,
+  MiddlewareContext,
+  NextFunction,
+} from "./types";
+import { JobPayload } from "./job";
 
 const debug = require("debug")("faktory-worker:worker");
 const uuid = require("uuid");
 const compose = require("koa-compose");
 const EventEmitter = require("events");
 
-import Client, { ClientOptions } from './client';
-const wrapNonErrors = require("./wrap-non-errors");
-const sleep = require("./sleep");
+import Client, { ClientOptions } from "./client";
+import wrapNonErrors from "./wrap-non-errors";
+import sleep from "./sleep";
 
 const START_DELAY = process.env.NODE_ENV === "test" ? 0 : 5;
 
-export interface WorkerOptions {
+export type WorkerOptions = {
   wid?: string;
   concurrency?: number;
   timeout?: number;
@@ -20,7 +26,7 @@ export interface WorkerOptions {
   middleware?: MiddlewareFunction[];
   registry?: Registry;
   poolSize?: number;
-};
+} & ClientOptions;
 
 /**
  * Representation of a worker process with many concurrent job processors. Works at the
@@ -45,8 +51,8 @@ export default class Worker extends EventEmitter {
   middleware: MiddlewareFunction[];
   registry: Registry;
   processors: {
-    [name: string]: Promise<any>
-  }
+    [name: string]: Promise<any>;
+  };
   client: Client;
   /**
    * @param {object} [options]
@@ -65,27 +71,27 @@ export default class Worker extends EventEmitter {
    * @param {Number} [options.poolSize=concurrency+2] the client connection pool size for
    *                                                  this worker
    */
-  constructor(options: WorkerOptions | ClientOptions  = {}) {
+  constructor(options: WorkerOptions = {}) {
     super();
     this.wid = options.wid || uuid().slice(0, 8);
-    this.concurrency = (options as WorkerOptions).concurrency || 20;
-    this.shutdownTimeout = ((options as WorkerOptions).timeout || 8) * 1000;
-    this.beatInterval = ((options as WorkerOptions).beatInterval || 15) * 1000;
-    this.queues = (options as WorkerOptions).queues || [];
+    this.concurrency = options.concurrency || 20;
+    this.shutdownTimeout = (options.timeout || 8) * 1000;
+    this.beatInterval = (options.beatInterval || 15) * 1000;
+    this.queues = options.queues || [];
     if (this.queues.length === 0) {
       this.queues = ["default"];
     }
-    this.middleware = (options as WorkerOptions).middleware || [];
-    this.registry = (options as WorkerOptions).registry || {};
+    this.middleware = options.middleware || [];
+    this.registry = options.registry || {};
     this.processors = {};
     this.client = new Client({
       wid: this.wid,
-      url: (options as ClientOptions).url,
-      host: (options as ClientOptions).host,
-      port: (options as ClientOptions).port,
-      password: (options as ClientOptions).password,
-      poolSize: (options as ClientOptions).poolSize || this.concurrency + 2,
-      labels: (options as ClientOptions).labels || [],
+      url: options.url,
+      host: options.host,
+      port: options.port,
+      password: options.password,
+      poolSize: options.poolSize || this.concurrency + 2,
+      labels: options.labels || [],
     });
   }
 
@@ -114,14 +120,8 @@ export default class Worker extends EventEmitter {
    * @see  Worker.quiet
    * @see  Worker.stop
    */
-<<<<<<< HEAD:lib/worker.js
-  async work() {
-    debug('work concurrency=%i', this.concurrency);
-    if (!this.listenerCount('error')) this.on('error', this.onerror);
-=======
   async work(): Promise<Worker> {
     debug("work concurrency=%i", this.concurrency);
->>>>>>> 7d69d97... convert source to typescript:src/worker.ts
     this.execute = this.createExecutor();
     await this.beat();
     this.heartbeat = setInterval(() => this.beat(), this.beatInterval);
@@ -160,7 +160,7 @@ export default class Worker extends EventEmitter {
    *
    * @return {promise} resolved when worker stops
    */
-  async stop(): Promise<undefined> {
+  async stop(): Promise<void | undefined> {
     Worker.removeSignalHandlers();
     debug("stop");
     this.quiet();
@@ -227,7 +227,7 @@ export default class Worker extends EventEmitter {
    * @return {JobPayload|null} a job payload from the server or null when there are
    *                             no jobs
    */
-  fetch(): Promise<JobPayload|null> {
+  fetch(): Promise<JobPayload | null> {
     return this.client.fetch(...this.queues);
   }
 
@@ -243,7 +243,10 @@ export default class Worker extends EventEmitter {
     const { registry } = this;
     return compose([
       ...this.middleware,
-      function getJobFnFromRegistry(ctx: MiddlewareContext, next: NextFunction) {
+      function getJobFnFromRegistry(
+        ctx: MiddlewareContext,
+        next: NextFunction
+      ) {
         const {
           job: { jobtype },
         } = ctx;
