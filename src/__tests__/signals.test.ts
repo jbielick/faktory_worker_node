@@ -1,6 +1,6 @@
 import test from "ava";
 
-import { Worker } from '../faktory';
+import { Worker } from "../faktory";
 import { sleep, push, mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);

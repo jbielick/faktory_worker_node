@@ -1,5 +1,6 @@
 import test from "ava";
-import Parser from '../parser';
+
+import Parser from "../parser";
 
 test.cb("parses HI", (t) => {
   const parser = new Parser();

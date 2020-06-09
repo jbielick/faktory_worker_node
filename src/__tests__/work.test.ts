@@ -8,7 +8,7 @@ const concurrency = 1;
 
 registerCleaner(test);
 
-function create(options: WorkerOptions = {}) {
+function create(options: WorkerOptions = {}): Worker {
   return new Worker(Object.assign({ concurrency }, options));
 }
 
@@ -39,7 +39,7 @@ test("awaits async jobfns", async (t) => {
     const worker = create({
       queues: [queue],
       registry: {
-        [jobtype]: async (...args: any[]) => {
+        [jobtype]: async (...args: unknown[]) => {
           await sleep(1);
           t.deepEqual(args, [1, 2, "three"], "args do not match");
           resolve();
@@ -59,7 +59,7 @@ test("handles sync jobfn and sync thunk", async (t) => {
     const worker = create({
       queues: [queue],
       registry: {
-        [jobtype]: (...args: any[]) => ({ job }: MiddlewareContext) => {
+        [jobtype]: (...args) => ({ job }: MiddlewareContext) => {
           t.is(job.jid, jid, "jid does not match");
           t.deepEqual(args, [1, 2, "three"], "args do not match");
           resolve();
@@ -95,20 +95,20 @@ test("handles sync jobfn and async (thunk)", async (t) => {
 test("handles async jobfn and sync thunk", async (t) => {
   const args = [1, 2, "three"];
   const { queue, jobtype, jid } = await push({ args });
+  const worker = create({ queues: [queue] });
 
-  await new Promise((resolve) => {
-    const worker = create({
-      queues: [queue],
-      registry: {
-        [jobtype]: async (...args) => ({ job }: MiddlewareContext) => {
-          t.is(job.jid, jid, "jid does not match");
-          t.deepEqual(args, [1, 2, "three"], "args do not match");
-          resolve();
-        },
-      },
-    });
+  await new Promise(async (resolve) => {
+    worker.register(
+      jobtype,
+      async (...args) => ({ job }: MiddlewareContext) => {
+        t.is(job.jid, jid, "jid does not match");
+        t.deepEqual(args, [1, 2, "three"], "args do not match");
+        resolve();
+      }
+    );
 
-    worker.work();
+    await worker.work();
+    await worker.stop();
   });
 });
 
@@ -120,7 +120,7 @@ test("handles async jobfn and async thunk", async (t) => {
     const worker = create({
       queues: [queue],
       registry: {
-        [jobtype]: async (...args: any[]) => async ({ job }: MiddlewareContext) => {
+        [jobtype]: async (...args) => async ({ job }: MiddlewareContext) => {
           await sleep(1);
           t.is(job.jid, jid, "jid does not match");
           t.deepEqual(args, [1, 2, "three"], "args do not match");
@@ -134,7 +134,7 @@ test("handles async jobfn and async thunk", async (t) => {
 });
 
 test(".handle() FAILs and throws when no job is registered", async (t) => {
-  const job = { jid: "123", jobtype: "Unknown", args: [], queue: 'default' };
+  const job = { jid: "123", jobtype: "Unknown", args: [], queue: "default" };
   await mocked(async (server, port) => {
     let worker: Worker;
 
@@ -156,7 +156,7 @@ test(".handle() FAILs and throws when no job is registered", async (t) => {
 test(".handle() FAILs and throws when the job throws (sync) during execution", async (t) => {
   const jid = "123";
   const jobtype = "failingjob";
-  const queue = 'default';
+  const queue = "default";
   const job = { jid, jobtype, args: [], queue };
   await mocked(async (server, port) => {
     let worker: Worker;
@@ -188,7 +188,7 @@ test(".handle() FAILs and throws when the job throws (sync) during execution", a
 test(".handle() FAILs and throws when the job rejects (async) during execution", async (t) => {
   const jid = "123";
   const jobtype = "failingjob";
-  const queue = 'default';
+  const queue = "default";
   const job = { jid, jobtype, args: [], queue };
   await mocked(async (server, port) => {
     let worker: Worker;
@@ -220,7 +220,7 @@ test(".handle() FAILs and throws when the job rejects (async) during execution",
 test(".handle() FAILs when the job returns a rejected promise with no error", async (t) => {
   const jid = "123";
   const jobtype = "failingjob";
-  const queue = 'default';
+  const queue = "default";
   const job = { jid, jobtype, args: [], queue };
   await mocked(async (server, port) => {
     let worker: Worker;

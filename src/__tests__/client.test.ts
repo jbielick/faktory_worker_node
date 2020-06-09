@@ -25,20 +25,22 @@ test("#buildHello: client builds a passwordless ahoy", (t) => {
 });
 
 test("#buildHello: client builds a salty ahoy", (t) => {
-  const client = new Client();
+  const client = new Client({
+    password: "abcde123",
+  });
 
   const hello = client.buildHello({ i: 3, s: "123", v: 3 });
 
   t.is(
     hello.pwdhash,
-    "3180b4071170db0ae9f666167ed379f53468463f152e3c3cfb57d1de45fd01d6"
+    "ef646abadf4ffba660d9bbb8de8e45576970de917b4c9da8cad96b49e64636d9"
   );
 });
 
 test("#buildHello: wid is present in HELLO", (t) => {
   const client = new Client({ wid: "workerid" });
 
-  const hello = client.buildHello({ v: 2, s: 'abc', i: 3 });
+  const hello = client.buildHello({ v: 2, s: "abc", i: 3 });
 
   t.is(hello.wid, client.wid, "wid in ahoy does not match");
 });
@@ -144,7 +146,7 @@ test("#beat: sends a heartbeat", async (t) => {
 });
 
 test("#beat: returns a signal from the server", async (t) => {
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     server.on("BEAT", mocked.beat("quiet"));
     const client = new Client({ port });
 
@@ -170,7 +172,7 @@ test("#connect: rejects if handshake is not successful", async (t) => {
 
 test("#connect: connects explicitly", async (t) => {
   t.plan(2);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     server
       .on("HELLO", () => {
         t.is(1, 1);
@@ -202,7 +204,7 @@ test("#ack: ACKs a job", async (t) => {
 });
 
 test("#fetch: returns null when queue is empty", async (t) => {
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     server.on("FETCH", ({ socket }) => {
       // null bulkstring
       socket.write("$-1\r\n");
@@ -215,7 +217,7 @@ test("#fetch: returns null when queue is empty", async (t) => {
 
 test("#push: defaults job payload values according to spec", async (t) => {
   let serverJob: JobPayload;
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     server.on("PUSH", ({ data, socket }) => {
       serverJob = data;
       socket.write("+OK\r\n");
@@ -282,7 +284,7 @@ test("#job: provides the args to the job", (t) => {
 });
 
 test("#job: push sends job specification to server", async (t) => {
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     server.on("PUSH", ({ data, socket }) => {
       socket.write("+OK\r\n");
       const { jobtype, args, custom, retry } = data;
@@ -302,7 +304,7 @@ test("#job: push sends job specification to server", async (t) => {
 });
 
 test("#job: push resolves with the jid", async (t) => {
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     server.on("PUSH", ({ data, socket }) => {
       socket.write("+OK\r\n");
     });

@@ -1,8 +1,9 @@
 import test from "ava";
 
-import Worker from '../worker';
+import Worker from "../worker";
 import faktoryControlCreator from "../faktory";
 import { sleep, push, registerCleaner } from "./_helper";
+import { MiddlewareContext } from "../types";
 
 registerCleaner(test);
 
@@ -52,12 +53,12 @@ test("invokes middleware in order", async (t) => {
   });
 
   await new Promise((resolve) => {
-    worker.registry[jobtype] = async () => {
+    worker.register(jobtype, async () => {
       recorder.push("run 1");
       await sleep(1);
       recorder.push("run 2");
       resolve();
-    };
+    });
     worker.work();
   });
 
@@ -83,15 +84,19 @@ test(".use() adds middleware to the stack", (t) => {
   );
 });
 
+type MyAppContext = {
+  memo: string[];
+} & MiddlewareContext;
+
 test("middleware context is passed to job thunk", async (t) => {
   const { queue, jobtype } = await push({ args: [1] });
   const control = faktoryControlCreator();
 
-  control.use((ctx, next) => {
+  control.use((ctx: MyAppContext, next) => {
     ctx.memo = ["hello"];
     return next();
   });
-  control.use((ctx, next) => {
+  control.use((ctx: MyAppContext, next) => {
     ctx.memo.push("world");
     return next();
   });

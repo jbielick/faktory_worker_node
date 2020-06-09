@@ -1,8 +1,12 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
+    "declaration": true,
     "rootDir": "./src",
     "outDir": "./lib",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "module": "commonjs",
     "target": "ES6",
@@ -14,8 +18,5 @@
   },
   "include": [
     "src/**/*"
-  ],
-  // "exclude": [
-  //   "src/__tests__"
-  // ]
+  ]
 }

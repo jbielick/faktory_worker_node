@@ -1,7 +1,7 @@
 import test from "ava";
 
 import Worker from "../worker";
-import { mocked, registerCleaner } from './_helper';
+import { mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);
 
@@ -40,11 +40,29 @@ test("passes the password to the client", (t) => {
 test("passes poolSize option to Client", (t) => {
   const worker = new Worker({ poolSize: 8 });
 
-  t.is(worker.client.pool._config.max, 8);
+  t.is(worker.client.pool.size, 8);
+});
+
+test.only("allows registering job functions", async (t) => {
+  await mocked(async (server, port) => {
+    server
+      .on("BEAT", mocked.beat())
+      .on("ACK", mocked.ok())
+      .on(
+        "FETCH",
+        mocked.fetch({ jid: "123", jobtype: "test", args: [], queue: "defaut" })
+      );
+    const worker = new Worker({ concurrency: 1, port });
+
+    worker.register("test", () => t.pass());
+
+    await worker.work();
+    await worker.stop();
+  });
 });
 
 test("hearbeats", async (t) => {
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     let worker: Worker;
     let called = 0;
 

@@ -1,7 +1,7 @@
 import test from "ava";
 
 import Client from "../client";
-import Mutation from "../mutation";
+import Mutation, { SCHEDULED, RETRIES, DEAD } from "../mutation";
 import { mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);
@@ -87,13 +87,13 @@ test("integration: #requeue moves retries to queue", async (t) => {
 
 test("#clear clears retries", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "clear",
-        target: "retries",
+        target: RETRIES,
         filter: {
           jobtype: "clearsRetries",
           jids: ["123"],
@@ -113,13 +113,13 @@ test("#clear clears retries", async (t) => {
 
 test("#clear clears scheduled jobs", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "clear",
-        target: "scheduled",
+        target: SCHEDULED,
         filter: {
           jobtype: "clearsScheduled",
           jids: ["123"],
@@ -139,13 +139,13 @@ test("#clear clears scheduled jobs", async (t) => {
 
 test("#clear clears dead jobs", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "clear",
-        target: "dead",
+        target: DEAD,
         filter: {
           jobtype: "clearsDead",
           jids: ["123"],
@@ -165,13 +165,13 @@ test("#clear clears dead jobs", async (t) => {
 
 test("#kill kills retries", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "kill",
-        target: "retries",
+        target: RETRIES,
         filter: {
           jobtype: "killsRetries",
           jids: ["123"],
@@ -191,13 +191,13 @@ test("#kill kills retries", async (t) => {
 
 test("#kill kills scheduled jobs", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "kill",
-        target: "scheduled",
+        target: SCHEDULED,
         filter: {
           jobtype: "killsScheduled",
           jids: ["123"],
@@ -217,13 +217,13 @@ test("#kill kills scheduled jobs", async (t) => {
 
 test("#kill kills dead jobs", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "kill",
-        target: "dead",
+        target: DEAD,
         filter: {
           jobtype: "killsDead",
           jids: ["123"],
@@ -243,13 +243,13 @@ test("#kill kills dead jobs", async (t) => {
 
 test("#discard discards retries", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "discard",
-        target: "retries",
+        target: RETRIES,
         filter: {
           jobtype: "discardsRetries",
           jids: ["123"],
@@ -269,13 +269,13 @@ test("#discard discards retries", async (t) => {
 
 test("#discard discards scheduled jobs", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "discard",
-        target: "scheduled",
+        target: SCHEDULED,
         filter: {
           jobtype: "discardsScheduled",
           jids: ["123"],
@@ -295,13 +295,13 @@ test("#discard discards scheduled jobs", async (t) => {
 
 test("#discard discards dead jobs", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "discard",
-        target: "dead",
+        target: DEAD,
         filter: {
           jobtype: "discardsDead",
           jids: ["123"],
@@ -321,13 +321,13 @@ test("#discard discards dead jobs", async (t) => {
 
 test("#requeue requeues retries", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "requeue",
-        target: "retries",
+        target: RETRIES,
         filter: {
           jobtype: "requeuesRetries",
           jids: ["123"],
@@ -347,13 +347,13 @@ test("#requeue requeues retries", async (t) => {
 
 test("#requeue requeues scheduled jobs", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "requeue",
-        target: "scheduled",
+        target: SCHEDULED,
         filter: {
           jobtype: "requeuesScheduled",
           jids: ["123"],
@@ -373,13 +373,13 @@ test("#requeue requeues scheduled jobs", async (t) => {
 
 test("#requeue requeues dead jobs", async (t) => {
   t.plan(1);
-  return mocked(async (server, port) => {
+  await mocked(async (server, port) => {
     const client = new Client({ port });
 
     server.on("MUTATE", ({ data, socket }) => {
       t.deepEqual(data, {
         cmd: "requeue",
-        target: "dead",
+        target: DEAD,
         filter: {
           jobtype: "requeuesDead",
           jids: ["123"],
@@ -398,20 +398,26 @@ test("#requeue requeues dead jobs", async (t) => {
 });
 
 test("#matching disallows nonstrings", (t) => {
-  t.throws(() => {
-    const mutation = new Mutation(new Client());
-    // @ts-ignore
-    mutation.matching(new RegExp("something"));
-  }, { message: /redis SCAN/ });
+  t.throws(
+    () => {
+      const mutation = new Mutation(new Client());
+      // @ts-ignore
+      mutation.matching(new RegExp("something"));
+    },
+    { message: /redis SCAN/ }
+  );
 });
 
 test("#ofType disallows nonstring argument", (t) => {
-  t.throws(() => {
-    const mutation = new Mutation(new Client());
-    const MyJob = () => {};
-    // @ts-ignore
-    mutation.ofType(MyJob);
-  }, {
-    message: /must be a string/i
-  });
+  t.throws(
+    () => {
+      const mutation = new Mutation(new Client());
+      const MyJob = () => {};
+      // @ts-ignore
+      mutation.ofType(MyJob);
+    },
+    {
+      message: /must be a string/i,
+    }
+  );
 });

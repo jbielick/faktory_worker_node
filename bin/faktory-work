@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
 const faktory = require("../lib/faktory");
-console.log(faktory);
-process.exit(0);
 const program = require("../lib/cli");
 
 faktory.work(program).catch((error) => {

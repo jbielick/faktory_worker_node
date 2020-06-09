@@ -1,25 +1,26 @@
-const RedisParser = require('redis-parser');
-const EventEmitter = require('events');
+import { EventEmitter } from "events";
 
-type EventHandler = (resp: any) => void | any;
+import RedisParser from "redis-parser";
+
+interface Adapter {
+  execute(buffer: Buffer): void;
+}
 
 /**
  * @private
  */
 export default class Parser extends EventEmitter {
-  on: (event: string, handler: EventHandler) => Parser;
-  emit: (event: string, object: any) => Parser;
+  adapter: Adapter;
 
   constructor() {
     super();
     this.adapter = new RedisParser({
-      returnReply: (response: string) =>
-        this.emit("message", response),
+      returnReply: (response: string) => this.emit("message", response),
       returnError: (err: Error) => this.emit("error", err),
     });
   }
 
-  parse(buffer: Buffer) {
+  parse(buffer: Buffer): void {
     this.adapter.execute(buffer);
   }
 }

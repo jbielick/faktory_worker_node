@@ -1,20 +1,23 @@
 import {
-  MiddlewareFunction,
+  Middleware,
   Registry,
+  JobFunction,
+  JobType,
   MiddlewareContext,
-  NextFunction,
 } from "./types";
 import { JobPayload } from "./job";
 
-const debug = require("debug")("faktory-worker:worker");
-const uuid = require("uuid");
-const compose = require("koa-compose");
-const EventEmitter = require("events");
+import makeDebug from "debug";
+import { v4 as uuid } from "uuid";
+import { ComposedMiddleware } from "koa-compose";
+import compose from "koa-compose";
+import { EventEmitter } from "events";
 
 import Client, { ClientOptions } from "./client";
 import wrapNonErrors from "./wrap-non-errors";
 import sleep from "./sleep";
 
+const debug = makeDebug("faktory-worker:worker");
 const START_DELAY = process.env.NODE_ENV === "test" ? 0 : 5;
 
 export type WorkerOptions = {
@@ -23,7 +26,7 @@ export type WorkerOptions = {
   timeout?: number;
   beatInterval?: number;
   queues?: string[];
-  middleware?: MiddlewareFunction[];
+  middleware?: Middleware[];
   registry?: Registry;
   poolSize?: number;
 } & ClientOptions;
@@ -44,16 +47,20 @@ export type WorkerOptions = {
  */
 export default class Worker extends EventEmitter {
   wid: string;
-  concurrency: number;
-  shutdownTimeout: number;
-  beatInterval: number;
+  private concurrency: number;
+  private shutdownTimeout: number;
+  private beatInterval: number;
   queues: string[];
-  middleware: MiddlewareFunction[];
-  registry: Registry;
-  processors: {
-    [name: string]: Promise<any>;
+  private middleware: Middleware[];
+  private registry: Registry;
+  private quieted: boolean | undefined;
+  private processors: {
+    [name: string]: Promise<void>;
   };
+  private execute: ComposedMiddleware<MiddlewareContext>;
+  private heartbeat: NodeJS.Timer;
   client: Client;
+
   /**
    * @param {object} [options]
    * @param  {String} [options.wid=uuid().slice(0, 8)]: the wid the worker will use
@@ -95,11 +102,7 @@ export default class Worker extends EventEmitter {
     });
   }
 
-  /**
-   * @private
-   * @param  {string} pid
-   */
-  async tick(pid: string): Promise<void> {
+  private async tick(pid: string): Promise<void> {
     if (this.quieted) return;
     try {
       const job = await this.fetch();
@@ -115,7 +118,7 @@ export default class Worker extends EventEmitter {
   /**
    * starts the worker fetch loop and job processing
    *
-   * @return {Worker} self, when working has been stopped by a signal or concurrent
+   * @return self, when working has been stopped by a signal or concurrent
    *                        call to stop or quiet
    * @see  Worker.quiet
    * @see  Worker.stop
@@ -136,7 +139,7 @@ export default class Worker extends EventEmitter {
     return this;
   }
 
-  setTick(pid: string) {
+  private setTick(pid: string): void {
     this.processors[pid] = this.tick(pid);
   }
 
@@ -145,10 +148,19 @@ export default class Worker extends EventEmitter {
   }
 
   /**
+   * registers a job function with the worker
+   *
+   * @param jobtype name of the job
+   * @param fn the job function or job function wrapper
+   */
+  register(jobtype: JobType, fn: JobFunction): Worker {
+    this.registry[jobtype] = fn;
+    return this;
+  }
+
+  /**
    * Signals to the worker to discontinue fetching new jobs and allows the worker
    * to continue processing any currently-running jobs
-   *
-   * @return {undefined}
    */
   quiet(): void {
     debug("quiet");
@@ -160,11 +172,10 @@ export default class Worker extends EventEmitter {
    *
    * @return {promise} resolved when worker stops
    */
-  async stop(): Promise<void | undefined> {
+  async stop(): Promise<void> {
     Worker.removeSignalHandlers();
     debug("stop");
     this.quiet();
-    this.stopped = true;
     clearInterval(this.heartbeat);
 
     return new Promise(async (resolve) => {
@@ -192,19 +203,14 @@ export default class Worker extends EventEmitter {
   /**
    * Returns an array of promises, each of which is a processor promise
    * doing work or waiting on fetch.
-   *
-   * @return {array} array of processor promises
    */
-  get inProgress(): Array<Promise<any>> {
+  get inProgress(): Array<Promise<void>> {
     return Object.values(this.processors);
   }
 
   /**
    * Sends a heartbeat for this server and interprets the response state (if present)
    * to quiet or terminate the worker
-   *
-   * @private
-   * @return {undefined}
    */
   async beat(): Promise<void> {
     const response = await this.client.beat();
@@ -227,7 +233,7 @@ export default class Worker extends EventEmitter {
    * @return {JobPayload|null} a job payload from the server or null when there are
    *                             no jobs
    */
-  fetch(): Promise<JobPayload | null> {
+  private fetch(): Promise<JobPayload | null> {
     return this.client.fetch(...this.queues);
   }
 
@@ -239,28 +245,23 @@ export default class Worker extends EventEmitter {
    * @private
    * @return {function} entrypoint function to the middleware stack
    */
-  createExecutor(): (ctx: MiddlewareContext) => {} {
+  private createExecutor(): ComposedMiddleware<MiddlewareContext> {
     const { registry } = this;
     return compose([
       ...this.middleware,
-      function getJobFnFromRegistry(
-        ctx: MiddlewareContext,
-        next: NextFunction
-      ) {
+      function getJobFnFromRegistry(ctx, next) {
         const {
           job: { jobtype },
         } = ctx;
         ctx.fn = registry[jobtype];
-
-        if (!ctx.fn) throw new Error(`No jobtype registered: ${jobtype}`);
-
         return next();
       },
-      async function callJobFn(ctx: MiddlewareContext, next: NextFunction) {
+      async function callJobFn(ctx, next) {
         const {
           fn,
-          job: { args },
+          job: { jobtype, args },
         } = ctx;
+        if (!fn) throw new Error(`No jobtype registered: ${jobtype}`);
         const thunkOrPromise = await fn(...args);
         if (typeof thunkOrPromise === "function") {
           await thunkOrPromise(ctx);
@@ -280,7 +281,7 @@ export default class Worker extends EventEmitter {
    * @param  {JobPayload} job the job payload from the server
    * @return {Promise<string>} 'ack' or 'fail' depending on job handling resu
    */
-  async handle(job: JobPayload): Promise<string> {
+  private async handle(job: JobPayload): Promise<string> {
     const { jid } = job;
     try {
       debug(`executing ${jid}`);
@@ -300,7 +301,7 @@ export default class Worker extends EventEmitter {
   /**
    * @private
    */
-  trapSignals() {
+  private trapSignals(): void {
     // istanbul ignore next
     process
       .once("SIGTERM", () => this.stop())
@@ -308,7 +309,7 @@ export default class Worker extends EventEmitter {
       .once("SIGINT", () => this.stop());
   }
 
-  static removeSignalHandlers() {
+  private static removeSignalHandlers(): void {
     process
       .removeAllListeners("SIGTERM")
       .removeAllListeners("SIGTSTP")
