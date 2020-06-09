@@ -1,80 +1,74 @@
-type RegistryFunction = (...args: any[]) => void;
+type JobFunction = (...args: unknown[]) => unknown;
 
 interface Registry {
-    [JobType: string]: RegistryFunction;
+  [JobType: string]: JobFunction;
 }
 
-type JobOptions = any[];
+type JobOptions = unknown[];
 export class Job {
-    public jid: string;
-    public jobtype: string;
-    public queue: string;
-    public args: JobOptions;
-    public priority: number;
-    public retry: number;
-    public at: Date | string;
-    public reserveFor: number;
-    public custom: object;
+  public jid: string;
+  public jobtype: string;
+  public queue: string;
+  public args: JobOptions;
+  public priority: number;
+  public retry: number;
+  public at: Date | string;
+  public reserveFor: number;
+  public custom: object;
 
-    constructor(jobtype: string, client: Client);
-    public toJSON(): object;
-    public push(): string;
+  constructor(jobtype: string, client: Client);
+  public toJSON(): object;
+  public push(): string;
 }
 
 export interface ClientOptions {
-    url?: string;
-    host?: string;
-    port?: string | number;
-    password?: string;
-    wid?: string;
-    labels?: string[];
-    poolSize?: number;
+  url?: string;
+  host?: string;
+  port?: string | number;
+  password?: string;
+  wid?: string;
+  labels?: string[];
+  poolSize?: number;
 }
 
 export class Client {
-    constructor(options?: ClientOptions);
-    public connect(): Promise<Client>;
-    public close(): void;
-    public job(jobtype: string, ...args: any[]): Job;
-    public push(job: Job | Object): Promise<string>;
+  constructor(options?: ClientOptions);
+  public connect(): Promise<Client>;
+  public close(): void;
+  public job(jobtype: string, ...args: unknown[]): Job;
+  public push(job: Job | Record<string, unknown>): Promise<string>;
 }
 
-export interface WorkerOptions {
-    wid?: string;
-    concurrency?: number;
-    poolSize?: number;
-    shutdownTimeout?: number;
-    beatInterval?: number;
-    queues?: string[];
-    middleware?: Function[];
-    registry?: Registry;
+export interface WorkerOptions extends ClientOptions {
+  wid?: string;
+  concurrency?: number;
+  poolSize?: number;
+  shutdownTimeout?: number;
+  beatInterval?: number;
+  queues?: string[];
+  middleware?: Function[];
+  registry?: Registry;
 }
 
 export class Worker {
-    constructor(options?: WorkerOptions);
-    public stop(): Promise<void>;
+  constructor(options?: WorkerOptions);
+  public stop(): Promise<void>;
 }
 
 export interface MiddleWareContext {
-    job: {
-        jid: string;
-        queue: string;
-        jobtype: string;
-        args: JobOptions;
-        created_at: string;
-        enqueued_at: string;
-        retry: number;
-    };
+  job: Job;
 }
 
-export class faktory {
-    static middleware: Function[];
-    static registry: Registry;
-    static use(fn: (ctx: MiddleWareContext, next: Function) => void): void;
-    static register(name: string, fn: RegistryFunction): faktory;
-    static connect(args?: ClientOptions): Client;
-    static work(options?: WorkerOptions): Worker;
-    static stop(): Promise<void>;
+export interface faktory {
+  middleware: Function[];
+  registry: Registry;
+  use(fn: (ctx: MiddleWareContext, next: Function) => void): faktory;
+  register(name: string, fn: JobFunction): faktory;
+  connect(options?: ClientOptions): Promise<Client>;
+  work(options?: WorkerOptions): Promise<Worker>;
+  stop(): Promise<void>;
+  Worker: typeof Worker;
+  Client: typeof Client;
 }
 
 export default faktory;
