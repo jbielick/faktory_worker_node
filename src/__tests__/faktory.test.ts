@@ -1,11 +1,11 @@
 import test from "ava";
 
-import create from '../faktory';
-import Client from '../client';
-import Worker from '../worker';
+import create from "../faktory";
+import Client from "../client";
+import Worker from "../worker";
 import { sleep, mocked, registerCleaner } from "./_helper";
 
-// registerCleaner(test);
+registerCleaner(test);
 
 test("#register: returns self", (t) => {
   const faktory = create();
@@ -59,21 +59,23 @@ test(".connect() resolves a client", async (t) => {
   t.truthy(client instanceof Client);
 });
 
-test(".work() creates a worker, runs it and resolve the worker", async (t) => {
-  t.plan(1);
+test(".work() creates a worker, runs, then resolves the worker", async (t) => {
+  t.plan(3);
   await mocked(async (server, port) => {
     server
       .on("BEAT", ({ socket }) => {
         socket.write("+OK\r\n");
+        t.true(true);
       })
       .on("FETCH", async ({ socket }) => {
         await sleep(10);
+        t.true(true);
         socket.write("$-1\r\n");
       });
     const faktory = create();
     const worker = await faktory.work({ port, concurrency: 1 });
 
-    t.truthy(worker.heartbeat, "worker not started (no heartbeat)");
+    t.true(worker instanceof Worker);
 
     await worker.stop();
   });

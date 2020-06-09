@@ -1,9 +1,11 @@
 import { Socket } from "net";
-const assert = require('assert');
-const EventEmitter = require('events');
-const debug = require('debug')('faktory-worker:connection');
+import { strictEqual } from "assert";
+import { EventEmitter } from "events";
+import makeDebug from "debug";
 
 import Parser from "./parser";
+
+const debug = makeDebug("faktory-worker:connection");
 
 const SOCKET_TIMEOUT = 10000;
 
@@ -34,7 +36,11 @@ export type ConnectionOptions = {
   host?: string;
   port?: string | number;
   password?: string;
-}
+};
+
+type RequestCallback = {
+  (e: Error | null, response?: string): void;
+};
 
 /**
  * A connection to the faktory server for sending commands
@@ -46,14 +52,19 @@ export type ConnectionOptions = {
  */
 export default class Connection extends EventEmitter {
   connected: boolean;
+  closing: boolean;
+  host: string | undefined;
+  port: string | number;
+  pending: RequestCallback[];
   socket: Socket;
   parser: Parser;
+  lastError: Error;
 
   /**
    * @param {Number} port the port to connect on
    * @param {String} host the hostname to connect to
    */
-  constructor(port?: string | number, host?: string) {
+  constructor(port: string | number, host?: string) {
     super();
     this.host = host;
     this.port = port;
@@ -66,9 +77,8 @@ export default class Connection extends EventEmitter {
   /**
    * Sets the socket timeout
    * @param {Number} ms timeout in milliseconds
-   * @private
    */
-  setTimeout(ms: number = SOCKET_TIMEOUT) {
+  setTimeout(ms: number = SOCKET_TIMEOUT): void {
     this.socket.setTimeout(ms);
   }
 
@@ -77,17 +87,17 @@ export default class Connection extends EventEmitter {
    * @private
    * @return {Connection} self
    */
-  listen(): Connection {
+  private listen(): Connection {
     this.socket
-      .on('connect', this.onConnect.bind(this))
-      .on('data', buffer => this.parser.parse(buffer))
-      .on('timeout', this.onTimeout.bind(this))
-      .on('error', this.onError.bind(this))
-      .on('close', this.onClose.bind(this));
+      .on("connect", this.onConnect.bind(this))
+      .on("data", (buffer) => this.parser.parse(buffer))
+      .on("timeout", this.onTimeout.bind(this))
+      .on("error", this.onError.bind(this))
+      .on("close", this.onClose.bind(this));
 
     this.parser
-      .on('message', this.onMessage.bind(this, null))
-      .on('error', this.onMessage.bind(this));
+      .on("message", this.onMessage.bind(this, null))
+      .on("error", this.onMessage.bind(this));
 
     return this;
   }
@@ -97,25 +107,25 @@ export default class Connection extends EventEmitter {
    * @return {Promise} resolves with the server's greeting
    */
   open(): Promise<Greeting> {
-    debug('connecting');
+    debug("connecting");
 
     return new Promise((resolve, reject) => {
       this.pending = [
         (err: Error, response: string) => {
           if (err) return reject(err);
-          const greeting = JSON.parse(response.split(' ')[1]);
-          this.emit('greeting', greeting);
+          const greeting = JSON.parse(response.split(" ")[1]);
+          this.emit("greeting", greeting);
           return resolve(greeting);
-        }
+        },
       ];
       const onceErrored = (err: Error) => {
         reject(err);
-        this.socket.removeListener('error', onceErrored);
+        this.socket.removeListener("error", onceErrored);
       };
       this.socket
-        .once('error', onceErrored)
-        .connect(this.port, this.host, () => {
-          this.socket.removeListener('error', onceErrored);
+        .once("error", onceErrored)
+        .connect(<number>this.port, this.host || "", () => {
+          this.socket.removeListener("error", onceErrored);
         });
     });
   }
@@ -123,9 +133,9 @@ export default class Connection extends EventEmitter {
   /**
    * @private
    */
-  onConnect() {
+  private onConnect() {
     this.connected = true;
-    this.emit('connect');
+    this.emit("connect");
     this.socket.setKeepAlive(true);
     this.setTimeout();
   }
@@ -133,31 +143,31 @@ export default class Connection extends EventEmitter {
   /**
    * @private
    */
-  clearPending(err: Error) {
-    this.pending.forEach((callback: (err: Error) => {}) => callback(err));
+  private clearPending(err: Error) {
+    this.pending.forEach((callback) => callback(err));
   }
 
   /**
    * @private
    */
-  onClose() {
-    debug('close');
+  private onClose() {
+    debug("close");
 
     this.closing = false;
     this.connected = false;
 
-    this.emit('close');
+    this.emit("close");
 
     // dead letters?
-    this.clearPending(this.lastError || new Error('Connection closed'));
+    this.clearPending(this.lastError || new Error("Connection closed"));
   }
 
   /**
    * @private
    */
-  onTimeout() {
-    this.emit('timeout');
-    debug('timeout');
+  private onTimeout() {
+    this.emit("timeout");
+    debug("timeout");
   }
 
   /**
@@ -170,10 +180,13 @@ export default class Connection extends EventEmitter {
    * @return {String}                  the server's response string
    * @throws {AssertionError}
    */
-  async sendWithAssert(command: Command, expectedResponse: string): Promise<string> {
+  async sendWithAssert(
+    command: Command,
+    expectedResponse: string
+  ): Promise<string> {
     const response = await this.send(command);
 
-    assert.strictEqual(
+    strictEqual(
       response,
       expectedResponse,
       `expected ${expectedResponse} response, but got ${response}`
@@ -190,13 +203,13 @@ export default class Connection extends EventEmitter {
    *                           rejected with an error
    */
   send(command: Command): Promise<string> {
-    const commandString = command.join(' ');
-    debug('SEND: %s', commandString);
+    const commandString = command.join(" ");
+    debug("SEND: %s", commandString);
 
     return new Promise((resolve, reject) => {
       this.socket.write(`${commandString}\r\n`);
       this.pending.push((err: Error, response: string) => {
-        debug('client=%o, server=%o', commandString, response);
+        debug("client=%o, server=%o", commandString, response);
         if (err) return reject(err);
         return resolve(response);
       });
@@ -206,7 +219,7 @@ export default class Connection extends EventEmitter {
   /**
    * @private
    */
-  onMessage(err: Error | null, message: string) {
+  private onMessage(err: Error | null, message: string) {
     debug(err || message);
 
     const callback = this.pending.shift();
@@ -223,9 +236,9 @@ export default class Connection extends EventEmitter {
   /**
    * @private
    */
-  onError(err: Error) {
+  private onError(err: Error) {
     this.lastError = err;
-    this.emit('error', err);
+    this.emit("error", err);
   }
 
   /**
@@ -234,8 +247,8 @@ export default class Connection extends EventEmitter {
    */
   close(): Promise<undefined> {
     this.closing = true;
-    return new Promise(resolve => (
-      this.socket.once('close', () => resolve()).end('END\r\n')
-    ));
+    return new Promise((resolve) =>
+      this.socket.once("close", () => resolve()).end("END\r\n")
+    );
   }
 }

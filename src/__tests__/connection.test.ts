@@ -1,31 +1,31 @@
-import test from 'ava';
+import test from "ava";
 
 import Connection from "../connection";
 import { mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);
 
-test("#open: resolves after HI", (t) => {
-  return mocked(async (server, port) => {
+test("#open: resolves after HI", async (t) => {
+  await mocked(async (server, port) => {
     let acc = "";
     server.on("HI", () => (acc += "A"));
     const conn = new Connection(port);
-    const resolved = await conn.open();
+    await conn.open();
     acc += "B";
     t.is(acc, "AB");
   });
 });
 
-test("#open: resolves with the server greeting", (t) => {
-  return mocked(async (_, port) => {
+test("#open: resolves with the server greeting", async (t) => {
+  await mocked(async (_, port) => {
     const conn = new Connection(port);
     const greeting = await conn.open();
-    t.deepEqual(greeting, { v: 2, s: 'abc', i: 3 });
+    t.deepEqual(greeting, { v: 2, s: "abc", i: 3 });
   });
 });
 
-test("#close: connects after disconnect", (t) => {
-  return mocked(async (server, port) => {
+test("#close: connects after disconnect", async (t) => {
+  await mocked(async (server, port) => {
     let acc = "";
     server.on("connection", () => (acc += "Co"));
     const conn = new Connection(port);
@@ -40,8 +40,8 @@ test("#close: connects after disconnect", (t) => {
   });
 });
 
-test("#close: emits close", (t) => {
-  return mocked(async (_, port) => {
+test("#close: emits close", async (t) => {
+  await mocked(async (_, port) => {
     const conn = new Connection(port);
     conn.on("close", () => t.pass());
     await conn.open();
@@ -81,8 +81,8 @@ test.cb("#open: emits error when connection fails to connect", (t) => {
     .then();
 });
 
-test("#send: resolves with server response", (t) => {
-  return mocked(async (_, port) => {
+test("#send: resolves with server response", async (t) => {
+  await mocked(async (_, port) => {
     const conn = new Connection(port);
     await conn.open();
     const resp = await conn.send(["HELLO", '{ "v": 2, "s": "abc", "i": 3 }']);
@@ -90,8 +90,8 @@ test("#send: resolves with server response", (t) => {
   });
 });
 
-test("#sendWithAssert: throws when response does not match assertion", (t) => {
-  return mocked(async (_, port) => {
+test("#sendWithAssert: throws when response does not match assertion", async (t) => {
+  await mocked(async (_, port) => {
     const conn = new Connection(port);
     await conn.open();
     return t.throwsAsync(
@@ -104,27 +104,31 @@ test("#sendWithAssert: throws when response does not match assertion", (t) => {
   });
 });
 
-test("#sendWithAssert: does not throw when response matches assertion", (t) => {
-  return mocked(async (_, port) => {
+test("#sendWithAssert: does not throw when response matches assertion", async (t) => {
+  await mocked(async (_, port) => {
     const conn = new Connection(port);
     await conn.open();
-    return t.notThrowsAsync(conn.sendWithAssert(["HELLO", '{ "v": 2, "s": "abc", "i": 3 }'], "OK"));
+    return t.notThrowsAsync(
+      conn.sendWithAssert(["HELLO", '{ "v": 2, "s": "abc", "i": 3 }'], "OK")
+    );
   });
 });
 
-test("#send: throws when the server responds with error", (t) => {
-  return mocked(async (server, port) => {
+test("#send: throws when the server responds with error", async (t) => {
+  await mocked(async (server, port) => {
     server.on("INFO", ({ socket }) => {
       socket.write("-ERR Something is wrong\r\n");
     });
     const conn = new Connection(port);
     await conn.open();
-    return t.throwsAsync(conn.send(["INFO"]), { message: /something is wrong/i });
+    return t.throwsAsync(conn.send(["INFO"]), {
+      message: /something is wrong/i,
+    });
   });
 });
 
-test("#send: emits timeout when exceeds deadline", (t) => {
-  return mocked(async (server, port) => {
+test("#send: emits timeout when exceeds deadline", async (t) => {
+  await mocked(async (server, port) => {
     let acc = "";
     server.on("INFO", ({ socket }) => {
       setTimeout(() => mocked.ok()({ socket }), 301);

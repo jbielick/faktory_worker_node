@@ -1,4 +1,5 @@
-import { JobPayload } from './job';
+import { JobPayload } from "./job";
+import { Middleware as KoaMiddleware } from "koa-compose";
 
 /**
  * Discriminator used by a worker to decide how to execute a job. This will be the name you
@@ -42,8 +43,13 @@ export type RFC3339_DateTime = string;
  *   // does something meaningful
  * }
  */
-export type JobFunctionWrapper = (...arg0: any[]) => MiddlewareFunction;
-export type JobFunction = (...arg0: any[]) => any;
+export type JobFunctionContextWrapper = {
+  (...args: unknown[]): ContextProvider;
+};
+export type UnWrappedJobFunction = {
+  (...args: unknown[]): unknown;
+};
+export type JobFunction = JobFunctionContextWrapper | UnWrappedJobFunction;
 
 /**
  * An after-connect initial message from the server to handshake the connection
@@ -80,16 +86,6 @@ export type JobFunction = (...arg0: any[]) => any;
  * @global
  */
 
-export interface NextFunction {
-  (): Promise<any>;
-};
-
-export interface MiddlewareFunction {
-  (ctx: MiddlewareContext, next: NextFunction): any;
-  _name?: string;
-}
-
-
 /**
  * A function returned by a job function that will be called with the job context as its
  * only argument and awaited. This exists to allow you to define simple job functions that
@@ -97,14 +93,14 @@ export interface MiddlewareFunction {
  * or stateful connections (like a database connection) in your job and want to attach
  * a connection for your job function to use without having to create it itself.
  *
- * @typedef JobThunk
+ * @typedef ContextProvider
  * @type {function}
  * @param {object} ctx context object containing the job and any other data attached
  *                     via userland-middleware
  * @example
  * // assumes you have middleware that attaches `db` to `ctx`
  *
- * faktory.register('UserWelcomer', (...args) => (ctx) => {
+ * faktory.register('UserWelcomer', (...args) => async (ctx) => {
  *   const [ id ] = args;
  *   const user = await ctx.db.users.find(id);
  *   const email = new WelcomeEmail(user);
@@ -112,7 +108,8 @@ export interface MiddlewareFunction {
  * });
  * @see  Context
  */
-export type JobThunk = (...arg0: any) => JobFunction;
+
+export type ContextProvider = (ctx: MiddlewareContext) => unknown;
 
 /**
  * A context object passed through middleware and to a job thunk
@@ -124,9 +121,9 @@ export type JobThunk = (...arg0: any) => JobFunction;
  */
 export interface MiddlewareContext {
   job: JobPayload;
-  fn: JobFunction;
-  [propName: string]: any;
+  fn?: JobFunction;
 }
+export type Middleware = KoaMiddleware<MiddlewareContext>;
 
 /**
  * A lookup table holding the jobtype constants mapped to their job functions
@@ -146,5 +143,5 @@ export interface MiddlewareContext {
  * }
  */
 export type Registry = {
-  [JobType: string]: JobFunctionWrapper | JobFunction;
+  [jobtype: string]: JobFunction;
 };

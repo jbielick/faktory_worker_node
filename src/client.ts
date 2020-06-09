@@ -1,19 +1,21 @@
+import { default as makeDebug } from "debug";
+import { URL } from "url";
+import { unescape } from "querystring";
+import { hostname } from "os";
+import { createPool } from "generic-pool";
 
-const debug = require("debug")("faktory-worker:client");
-import { URL } from 'url';
-const querystring = require("querystring");
-const os = require("os");
-const { createPool } = require("generic-pool");
-const heartDebug = require("debug")("faktory-worker:client:heart");
-
-import encode from './encode';
-import Job, { JobPayload } from './job';
-import hash from './hash';
-import Mutation, { RETRIES, DEAD, SCHEDULED } from './mutation';
+import encode from "./encode";
+import Job, { JobPayload } from "./job";
+import hash from "./hash";
+import Mutation, { RETRIES, DEAD, SCHEDULED } from "./mutation";
 import Connection, { Greeting } from "./connection";
 import ConnectionFactory from "./connection-factory";
+import { Pool } from "generic-pool";
 import { JobType } from "./types";
-import { Command } from './connection';
+import { Command } from "./connection";
+
+const debug = makeDebug("faktory-worker:client");
+const heartDebug = makeDebug("faktory-worker:client:heart");
 
 const FAKTORY_PROTOCOL_VERSION = 2;
 const FAKTORY_PROVIDER = process.env.FAKTORY_PROVIDER || "FAKTORY_URL";
@@ -30,7 +32,7 @@ export type ClientOptions = {
 };
 
 export type JSONable = {
-  toJSON(): object;
+  toJSON(): Record<string, unknown>;
 };
 
 export type Hello = {
@@ -42,33 +44,24 @@ export type Hello = {
   pwdhash?: string;
 };
 
-interface Pool {
-  use(callback: (conn: Connection) => {}): Promise<any>;
-  drain(): Promise<any>;
-  clear(): Promise<any>;
-  _config: {
-    max: number;
-  }
-};
-
 export type ServerInfo = {
   server_utc_time: string;
   faktory: {
     queues: {
       [name: string]: number;
-    }
+    };
     tasks: {
       Retries: {
         size: number;
-      }
+      };
       Dead: {
         size: number;
-      }
+      };
       Scheduled: {
         size: number;
-      }
-    }
-  }
+      };
+    };
+  };
 };
 
 /**
@@ -87,8 +80,7 @@ export default class Client {
   labels: string[];
   wid?: string;
   connectionFactory: ConnectionFactory;
-  pool: Pool;
-
+  pool: Pool<Connection>;
 
   /**
    * Creates a Client with a connection pool
@@ -109,7 +101,7 @@ export default class Client {
   constructor(options: ClientOptions = {}) {
     const url = new URL(options.url || FAKTORY_URL);
 
-    this.password = options.password || querystring.unescape(url.password);
+    this.password = options.password || unescape(url.password);
     this.labels = options.labels || [];
     this.wid = options.wid;
     this.connectionFactory = new ConnectionFactory({
@@ -128,7 +120,7 @@ export default class Client {
     });
   }
 
-  static assertVersion(version: number) {
+  static assertVersion(version: number): void {
     if (version !== FAKTORY_PROTOCOL_VERSION) {
       throw new Error(`
   Client / server version mismatch
@@ -156,7 +148,7 @@ export default class Client {
    * Closes the connection to the server
    * @return {Promise.<undefined>}
    */
-  async close(): Promise<undefined> {
+  async close(): Promise<void> {
     await this.pool.drain();
     return this.pool.clear();
   }
@@ -168,13 +160,13 @@ export default class Client {
    * @return {Job}            a job builder with attached Client for PUSHing
    * @see  Job
    */
-  job(jobtype: JobType, ...args: any[]) {
+  job(jobtype: JobType, ...args: unknown[]): Job {
     const job = new Job(jobtype, this);
     job.args = args;
     return job;
   }
 
-  handshake(conn: Connection, greeting: Greeting) {
+  handshake(conn: Connection, greeting: Greeting): Promise<string> {
     debug("handshake");
 
     Client.assertVersion(greeting.v);
@@ -194,7 +186,7 @@ export default class Client {
    */
   buildHello({ s: salt, i: iterations }: Greeting): Hello {
     const hello: Hello = {
-      hostname: os.hostname(),
+      hostname: hostname(),
       v: FAKTORY_PROTOCOL_VERSION,
     };
 
@@ -204,7 +196,7 @@ export default class Client {
       hello.wid = this.wid;
     }
 
-    if (salt) {
+    if (salt && this.password) {
       hello.pwdhash = hash(this.password, salt, iterations);
     }
 
@@ -219,12 +211,14 @@ export default class Client {
    * @param {...*} args arguments to {@link Connection.send}
    * @see Connection.send
    */
-  send(command: Command) {
+  send(command: Command): PromiseLike<string> {
     return this.pool.use((conn: Connection) => conn.send(command));
   }
 
-  sendWithAssert(command: Command, assertion: string) {
-    return this.pool.use((conn) => conn.sendWithAssert(command, assertion));
+  sendWithAssert(command: Command, assertion: string): PromiseLike<string> {
+    return this.pool.use((conn: Connection) =>
+      conn.sendWithAssert(command, assertion)
+    );
   }
 
   /**
@@ -232,7 +226,7 @@ export default class Client {
    * @param  {...String} queues list of queues to pull a job from
    * @return {Promise.<object|null>}           a job payload if one is available, otherwise null
    */
-  async fetch(...queues: string[]): Promise<JobPayload|null> {
+  async fetch(...queues: string[]): Promise<JobPayload | null> {
     const response = await this.send(["FETCH", ...queues]);
     return JSON.parse(response);
   }
@@ -257,8 +251,8 @@ export default class Client {
    * @param  {Job|Object} job job payload to push
    * @return {Promise.<string>}         the jid for the pushed job
    */
-  async push(job: JSONable | object): Promise<string> {
-    const payload = ("toJSON" in job) ? (job as JSONable).toJSON() : job;
+  async push(job: JSONable | Record<string, unknown>): Promise<string> {
+    const payload = "toJSON" in job ? (job as JSONable).toJSON() : job;
     const payloadWithDefaults = Object.assign(
       { jid: Job.jid() },
       Job.defaults,
@@ -299,13 +293,13 @@ export default class Client {
    * @param  {Error} e   an error object that caused the job to fail
    * @return {Promise.<string>}     the server's response text
    */
-  fail(jid: string, e: Error): Promise<string> {
+  fail(jid: string, e: Error): PromiseLike<string> {
     return this.sendWithAssert(
       [
         "FAIL",
         encode({
           message: e.message,
-          errtype: (e as any).code,
+          errtype: (e as NodeJS.ErrnoException).code,
           backtrace: (e.stack || "").split("\n").slice(0, 100),
           jid,
         }),
@@ -314,19 +308,19 @@ export default class Client {
     );
   }
 
-  get retries() {
+  get [RETRIES](): Mutation {
     const mutation = new Mutation(this);
     mutation.target = RETRIES;
     return mutation;
   }
 
-  get scheduled() {
+  get [SCHEDULED](): Mutation {
     const mutation = new Mutation(this);
     mutation.target = SCHEDULED;
     return mutation;
   }
 
-  get dead() {
+  get [DEAD](): Mutation {
     const mutation = new Mutation(this);
     mutation.target = DEAD;
     return mutation;

@@ -1,28 +1,26 @@
-import encode from './encode';
-import { JobType } from './types';
-import Client from './client';
+import encode from "./encode";
+import { JobType } from "./types";
+import Client from "./client";
 
-const MUTATE = 'MUTATE';
+const MUTATE = "MUTATE";
 
 /**
- * commands
  * @private
  */
 enum Verb {
-  CLEAR = 'clear',
-  KILL = 'kill',
-  DISCARD = 'discard',
-  REQUEUE = 'requeue',
+  CLEAR = "clear",
+  KILL = "kill",
+  DISCARD = "discard",
+  REQUEUE = "requeue",
 }
 
 /**
- * targets
  * @private
  */
 enum Target {
-  RETRIES = 'retries',
-  SCHEDULED = 'scheduled',
-  DEAD = 'dead',
+  RETRIES = "retries",
+  SCHEDULED = "scheduled",
+  DEAD = "dead",
 }
 
 export const SCHEDULED = Target.SCHEDULED;
@@ -34,7 +32,13 @@ export type Filter = {
   pattern?: string;
   jids?: Array<string>;
   regexp?: string;
-}
+};
+
+type Command = {
+  cmd: Verb;
+  filter: Filter;
+  target: Target;
+};
 
 /**
  * A wrapper for the [Mutate API](https://github.com/contribsys/faktory/wiki/Mutate-API)
@@ -44,7 +48,7 @@ export type Filter = {
  * !!! Please be warned: MUTATE commands can be slow and/or resource intensive.
  * **They should not be used as part of your application logic.**
  */
-class Mutation {
+export default class Mutation {
   client: Client;
   target: Target;
   filter: Filter;
@@ -69,9 +73,9 @@ class Mutation {
    * @example
    * client.dead.ofType('SendEmail').discard();
    */
-  ofType(jobtype: JobType) {
-    if (typeof jobtype !== 'string') {
-      throw new Error('jobtype given to ofType must be a string');
+  ofType(jobtype: JobType): Mutation {
+    if (typeof jobtype !== "string") {
+      throw new Error("jobtype given to ofType must be a string");
     }
     this.filter.jobtype = jobtype;
     return this;
@@ -87,7 +91,7 @@ class Mutation {
    * @example
    * await client.retries.withJids('1234').requeue();
    */
-  withJids(...jids: string[] | [string[]]) {
+  withJids(...jids: string[] | [string[]]): Mutation {
     let ids: string[];
     if (Array.isArray(jids[0])) {
       ids = jids[0];
@@ -112,14 +116,16 @@ class Mutation {
    * @example
    * await client.retries.matching("*uid:12345*").kill();
    */
-  matching(pattern: string) {
-    if (typeof pattern !== 'string') {
-      throw new Error(`
+  matching(pattern: string): Mutation {
+    if (typeof pattern !== "string") {
+      throw new Error(
+        `
 Argument given to matching() must be a redis SCAN compatible pattern string,
 other object types cannot be translated.
 See the Redis SCAN documentation for pattern matching examples.
 https://redis.io/commands/scan
-      `.trim());
+      `.trim()
+      );
     }
     this.filter.regexp = pattern;
     return this;
@@ -128,16 +134,19 @@ https://redis.io/commands/scan
   /**
    * @private
    */
-  toJSON() {
-    const { cmd, target, filter } = this;
-    return { cmd, target, filter };
+  private toJSON(): Command {
+    return {
+      cmd: this.cmd,
+      target: this.target,
+      filter: this.filter,
+    };
   }
 
   /**
    * Executes a *clear* mutation. This clears the
    * set entirely **and any filtering added does not apply**.
    */
-  clear() {
+  clear(): PromiseLike<string> {
     this.cmd = Verb.CLEAR;
     return this.send();
   }
@@ -145,7 +154,7 @@ https://redis.io/commands/scan
   /**
    * Executes a *kill* mutation. Jobs that are killed are sent to the dead set.
    */
-  kill() {
+  kill(): PromiseLike<string> {
     this.cmd = Verb.KILL;
     return this.send();
   }
@@ -153,7 +162,7 @@ https://redis.io/commands/scan
   /**
    * Executes a *discard* mutation. Jobs that are discarded are permanently deleted.
    */
-  discard() {
+  discard(): PromiseLike<string> {
     this.cmd = Verb.DISCARD;
     return this.send();
   }
@@ -162,7 +171,7 @@ https://redis.io/commands/scan
    * Executes a *requeue* mutation. Jobs that are requeued are sent back to their
    * original queue for processing.
    */
-  requeue() {
+  requeue(): PromiseLike<string> {
     this.cmd = Verb.REQUEUE;
     return this.send();
   }
@@ -170,12 +179,7 @@ https://redis.io/commands/scan
   /**
    * @private
    */
-  send() {
-    return this.client.sendWithAssert(
-      [MUTATE, encode(this.toJSON())],
-      "OK"
-    );
+  send(): PromiseLike<string> {
+    return this.client.sendWithAssert([MUTATE, encode(this.toJSON())], "OK");
   }
 }
-
-export default Mutation;

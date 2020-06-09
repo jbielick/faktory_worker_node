@@ -1,19 +1,21 @@
-const debug = require("debug")("faktory-worker");
-const assert = require("assert");
+import makeDebug from "debug";
+import { strict as assert } from "assert";
 
-import Client from "./client";
-import Worker, { WorkerOptions } from './worker';
-import { JobType, Registry, MiddlewareFunction, JobFunction } from "./types";
+import Client, { ClientOptions } from "./client";
+import Worker, { WorkerOptions } from "./worker";
+import { JobType, Registry, Middleware, JobFunction } from "./types";
+
+const debug = makeDebug("faktory-worker");
 
 export interface FaktoryControl {
   registry: Registry;
-  use(fn: MiddlewareFunction): FaktoryControl;
-  middleware: MiddlewareFunction[];
+  use(fn: Middleware): FaktoryControl;
+  middleware: Middleware[];
   register(name: JobType, fn: JobFunction): FaktoryControl;
-  connect(...arg0: any[]): Promise<Client>;
+  connect(options?: ClientOptions): Promise<Client>;
   work(options?: WorkerOptions): Promise<Worker>;
-  stop(): Promise<any>;
-};
+  stop(): Promise<void>;
+}
 
 export type FaktoryControlCreator = {
   (): FaktoryControl;
@@ -27,7 +29,7 @@ export type FaktoryControlCreator = {
  * @return {FaktoryControl}
  */
 const createControl: FaktoryControlCreator = (): FaktoryControl => {
-  const middleware: MiddlewareFunction[] = [];
+  const middleware: Middleware[] = [];
   const registry: Registry = {};
   let worker: Worker | undefined;
 
@@ -58,7 +60,7 @@ const createControl: FaktoryControlCreator = (): FaktoryControl => {
      * @instance
      * @return {Middleware} array of middleware functions with koa-compose-style signatures
      */
-    get middleware(): MiddlewareFunction[] {
+    get middleware(): Middleware[] {
       return middleware;
     },
 
@@ -78,9 +80,9 @@ const createControl: FaktoryControlCreator = (): FaktoryControl => {
      *   });
      * });
      */
-    use(fn: MiddlewareFunction): FaktoryControl {
+    use(fn: Middleware): FaktoryControl {
       assert(typeof fn === "function");
-      debug("use %s", fn._name || fn.name || "-");
+      debug("use %s", fn.name || "-");
       middleware.push(fn);
       return this;
     },
@@ -115,8 +117,8 @@ const createControl: FaktoryControlCreator = (): FaktoryControl => {
      *
      * await client.push(job);
      */
-    connect(...args: any[]): Promise<Client> {
-      return new Client(...args).connect();
+    connect(options?: ClientOptions): Promise<Client> {
+      return new Client(options).connect();
     },
 
     /**
@@ -147,7 +149,7 @@ const createControl: FaktoryControlCreator = (): FaktoryControl => {
      *
      * faktory.stop();
      */
-    stop(): Promise<any> {
+    stop(): Promise<void> {
       if (worker) {
         const existing: Worker = worker;
         worker = undefined;
@@ -158,9 +160,7 @@ const createControl: FaktoryControlCreator = (): FaktoryControl => {
   };
 };
 
-export {
-  Worker, Client
-}
+export { Worker, Client };
 
 export default <FaktoryControlCreator & FaktoryControl>(
   Object.assign(createControl, createControl())

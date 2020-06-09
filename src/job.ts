@@ -1,8 +1,8 @@
-const uuid = require('uuid/v4');
-import Client from './client';
+import { v4 as uuid } from "uuid";
+import Client from "./client";
 
 export interface JobCustomParams {
-  [propName: string]: any;
+  [propName: string]: unknown;
 }
 
 /**
@@ -28,7 +28,7 @@ export type PartialJobPayload = {
   jid?: string;
   jobtype: string;
   queue: string;
-  args: any[];
+  args: unknown[];
   priority?: number;
   retry?: number;
   custom?: JobCustomParams;
@@ -38,8 +38,6 @@ export type PartialJobPayload = {
 
 export type JobPayload = PartialJobPayload & {
   jid: string;
-  queue: string;
-  args: any[];
 };
 
 /**
@@ -66,12 +64,12 @@ export default class Job {
    * @param  {Client} [client]  a client to use for communicating to the server (if calling push)
    */
   constructor(jobtype: string, client: Client) {
-    if (!jobtype) throw new Error('must provide jobtype');
+    if (!jobtype) throw new Error("must provide jobtype");
     this.client = client;
-    this.payload = Object.assign({
+    this.payload = Object.assign(Job.defaults, {
       jid: Job.jid(),
       jobtype,
-    }, Job.defaults);
+    });
   }
 
   get jid(): string {
@@ -110,7 +108,7 @@ export default class Job {
     this.payload.queue = value;
   }
 
-  get args(): any[] {
+  get args(): unknown[] {
     return this.payload.args;
   }
 
@@ -120,11 +118,11 @@ export default class Job {
    * @param  {Array} value array of positional arguments
    * @see  external:JobPayload
    */
-  set args(value: any[]) {
-    this.payload.args = value;
+  set args(args: unknown[]) {
+    this.payload.args = args;
   }
 
-  get priority() {
+  get priority(): number | undefined {
     return this.payload.priority;
   }
 
@@ -134,7 +132,7 @@ export default class Job {
    * @param  {number} value 0-9
    * @see  external:JobPayload
    */
-  set priority(value) {
+  set priority(value: number | undefined) {
     this.payload.priority = value;
   }
 
@@ -163,11 +161,11 @@ export default class Job {
    * @see  external:JobPayload
    */
   set at(value: Date | string | undefined) {
-    const string = typeof value === 'object' ? value.toISOString() : value;
+    const string = typeof value === "object" ? value.toISOString() : value;
     this.payload.at = string;
   }
 
-  get reserveFor() {
+  get reserveFor(): number | undefined {
     return this.payload.reserve_for;
   }
 
@@ -181,7 +179,7 @@ export default class Job {
     this.payload.reserve_for = value;
   }
 
-  get custom() {
+  get custom(): JobCustomParams | undefined {
     return this.payload.custom;
   }
 
@@ -191,8 +189,8 @@ export default class Job {
    * @param  {object} value the custom data
    * @see  external:JobPayload
    */
-  set custom(value: object | undefined) {
-    this.payload.custom = value;
+  set custom(custom: JobCustomParams | undefined) {
+    this.payload.custom = custom;
   }
 
   /**
@@ -216,9 +214,10 @@ export default class Job {
     return this.client.push(this);
   }
 
-  static get defaults() {
+  static get defaults(): PartialJobPayload {
     return {
-      queue: 'default',
+      jobtype: "",
+      queue: "default",
       args: [],
       priority: 5,
       retry: 25,

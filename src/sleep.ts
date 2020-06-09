@@ -1,5 +1,3 @@
-export default function sleep(ms: number, value = true) {
-  return new Promise(resolve => (
-    setTimeout(() => resolve(value), ms)
-  ));
-};
+export default function sleep(ms: number, value?: unknown): Promise<unknown> {
+  return new Promise((resolve) => setTimeout(() => resolve(value), ms));
+}

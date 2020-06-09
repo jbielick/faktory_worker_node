@@ -1,15 +1,23 @@
-import { MiddlewareFunction, Registry, MiddlewareContext, NextFunction } from "./types";
+import {
+  Middleware,
+  Registry,
+  JobFunction,
+  JobType,
+  MiddlewareContext,
+} from "./types";
 import { JobPayload } from "./job";
 
-const debug = require("debug")("faktory-worker:worker");
-const uuid = require("uuid");
-const compose = require("koa-compose");
-const EventEmitter = require("events");
+import makeDebug from "debug";
+import { v4 as uuid } from "uuid";
+import { ComposedMiddleware } from "koa-compose";
+import compose from "koa-compose";
+import { EventEmitter } from "events";
 
-import Client, { ClientOptions } from './client';
-import wrapNonErrors from './wrap-non-errors';
-import sleep from './sleep';
+import Client, { ClientOptions } from "./client";
+import wrapNonErrors from "./wrap-non-errors";
+import sleep from "./sleep";
 
+const debug = makeDebug("faktory-worker:worker");
 const START_DELAY = process.env.NODE_ENV === "test" ? 0 : 5;
 
 export type WorkerOptions = {
@@ -18,7 +26,7 @@ export type WorkerOptions = {
   timeout?: number;
   beatInterval?: number;
   queues?: string[];
-  middleware?: MiddlewareFunction[];
+  middleware?: Middleware[];
   registry?: Registry;
   poolSize?: number;
 } & ClientOptions;
@@ -39,33 +47,37 @@ export type WorkerOptions = {
  */
 export default class Worker extends EventEmitter {
   wid: string;
-  concurrency: number;
-  shutdownTimeout: number;
-  beatInterval: number;
+  private concurrency: number;
+  private shutdownTimeout: number;
+  private beatInterval: number;
   queues: string[];
-  middleware: MiddlewareFunction[];
-  registry: Registry;
-  processors: {
-    [name: string]: Promise<any>;
+  private middleware: Middleware[];
+  private registry: Registry;
+  private quieted: boolean | undefined;
+  private processors: {
+    [name: string]: Promise<void>;
   };
+  private execute: ComposedMiddleware<MiddlewareContext>;
+  private heartbeat: NodeJS.Timer;
   client: Client;
+
   /**
-  * @param {object} [options]
-  * @param  {String} [options.wid=uuid().slice(0, 8)]: the wid the worker will use
-  * @param  {Number} [options.concurrency=20]: how many jobs this worker can process at once
-  * @param  {Number} [options.shutdownTimeout=8]: the amount of time in seconds that the worker
-  *                                             may take to finish a job before exiting
-  *                                             ungracefully
-  * @param  {Number} [options.beatInterval=15]: the amount of time in seconds between each
-  *                                             heartbeat
-  * @param  {string[]} [options.queues=['default']]: the queues this worker will fetch jobs from
-  * @param  {function[]} [options.middleware=[]]: a set of middleware to run before performing
-  *                                               each job
-  *                                       in koa.js-style middleware execution signature
-  * @param  {Registry} [options.registry=Registry]: the job registry to use when working
-  * @param {Number} [options.poolSize=concurrency+2] the client connection pool size for
-  *                                                  this worker
-  */
+   * @param {object} [options]
+   * @param  {String} [options.wid=uuid().slice(0, 8)]: the wid the worker will use
+   * @param  {Number} [options.concurrency=20]: how many jobs this worker can process at once
+   * @param  {Number} [options.shutdownTimeout=8]: the amount of time in seconds that the worker
+   *                                             may take to finish a job before exiting
+   *                                             ungracefully
+   * @param  {Number} [options.beatInterval=15]: the amount of time in seconds between each
+   *                                             heartbeat
+   * @param  {string[]} [options.queues=['default']]: the queues this worker will fetch jobs from
+   * @param  {function[]} [options.middleware=[]]: a set of middleware to run before performing
+   *                                               each job
+   *                                       in koa.js-style middleware execution signature
+   * @param  {Registry} [options.registry=Registry]: the job registry to use when working
+   * @param {Number} [options.poolSize=concurrency+2] the client connection pool size for
+   *                                                  this worker
+   */
   constructor(options: WorkerOptions = {}) {
     super();
     this.wid = options.wid || uuid().slice(0, 8);
@@ -90,11 +102,7 @@ export default class Worker extends EventEmitter {
     });
   }
 
-  /**
-  * @private
-  * @param  {string} pid
-  */
-  async tick(pid: string): Promise<void> {
+  private async tick(pid: string): Promise<void> {
     if (this.quieted) return;
     try {
       const job = await this.fetch();
@@ -108,21 +116,18 @@ export default class Worker extends EventEmitter {
   }
 
   /**
-  * starts the worker fetch loop and job processing
-  *
-  * @return {Worker} self, when working has been stopped by a signal or concurrent
-  *                        call to stop or quiet
-  * @see  Worker.quiet
-  * @see  Worker.stop
-  */
+   * starts the worker fetch loop and job processing
+   *
+   * @return self, when working has been stopped by a signal or concurrent
+   *                        call to stop or quiet
+   * @see  Worker.quiet
+   * @see  Worker.stop
+   */
   async work(): Promise<Worker> {
     debug("work concurrency=%i", this.concurrency);
     this.execute = this.createExecutor();
     await this.beat();
-    this.heartbeat = setInterval(
-      () => this.beat(),
-      this.beatInterval
-    );
+    this.heartbeat = setInterval(() => this.beat(), this.beatInterval);
     this.trapSignals();
 
     for (let index = 0; index < this.concurrency; index += 1) {
@@ -134,31 +139,39 @@ export default class Worker extends EventEmitter {
     return this;
   }
 
-  setTick(pid: string) {
+  private setTick(pid: string): void {
     this.processors[pid] = this.tick(pid);
   }
 
   /**
-  * Signals to the worker to discontinue fetching new jobs and allows the worker
-  * to continue processing any currently-running jobs
-  *
-  * @return {undefined}
-  */
+   * registers a job function with the worker
+   *
+   * @param jobtype name of the job
+   * @param fn the job function or job function wrapper
+   */
+  register(jobtype: JobType, fn: JobFunction): Worker {
+    this.registry[jobtype] = fn;
+    return this;
+  }
+
+  /**
+   * Signals to the worker to discontinue fetching new jobs and allows the worker
+   * to continue processing any currently-running jobs
+   */
   quiet(): void {
     debug("quiet");
     this.quieted = true;
   }
 
   /**
-  * stops the worker
-  *
-  * @return {promise} resolved when worker stops
-  */
-  async stop(): Promise<void|undefined> {
+   * stops the worker
+   *
+   * @return {promise} resolved when worker stops
+   */
+  async stop(): Promise<void> {
     Worker.removeSignalHandlers();
     debug("stop");
     this.quiet();
-    this.stopped = true;
     clearInterval(this.heartbeat);
 
     return new Promise(async (resolve) => {
@@ -184,22 +197,17 @@ export default class Worker extends EventEmitter {
   }
 
   /**
-  * Returns an array of promises, each of which is a processor promise
-  * doing work or waiting on fetch.
-  *
-  * @return {array} array of processor promises
-  */
-  get inProgress(): Array<Promise<any>> {
+   * Returns an array of promises, each of which is a processor promise
+   * doing work or waiting on fetch.
+   */
+  get inProgress(): Array<Promise<void>> {
     return Object.values(this.processors);
   }
 
   /**
-  * Sends a heartbeat for this server and interprets the response state (if present)
-  * to quiet or terminate the worker
-  *
-  * @private
-  * @return {undefined}
-  */
+   * Sends a heartbeat for this server and interprets the response state (if present)
+   * to quiet or terminate the worker
+   */
   async beat(): Promise<void> {
     const response = await this.client.beat();
     switch (response) {
@@ -215,50 +223,41 @@ export default class Worker extends EventEmitter {
   }
 
   /**
-  * Fetches a job from the defined queues.
-  *
-  * @private
-  * @return {JobPayload|null} a job payload from the server or null when there are
-  *                             no jobs
-  */
-  fetch(): Promise<JobPayload | null> {
+   * Fetches a job from the defined queues.
+   *
+   * @private
+   * @return {JobPayload|null} a job payload from the server or null when there are
+   *                             no jobs
+   */
+  private fetch(): Promise<JobPayload | null> {
     return this.client.fetch(...this.queues);
   }
 
   /**
-  * Builds a koa-compose stack of the middleware functions in addition to
-  * two worker-added middleware functions for pulling the job function from the
-  * registry and calling the job function and/or thunk
-  *
-  * @private
-  * @return {function} entrypoint function to the middleware stack
-  */
-  createExecutor(): (ctx: MiddlewareContext) => {} {
+   * Builds a koa-compose stack of the middleware functions in addition to
+   * two worker-added middleware functions for pulling the job function from the
+   * registry and calling the job function and/or thunk
+   *
+   * @private
+   * @return {function} entrypoint function to the middleware stack
+   */
+  private createExecutor(): ComposedMiddleware<MiddlewareContext> {
     const { registry } = this;
     return compose([
       ...this.middleware,
-      function getJobFnFromRegistry(
-        ctx: MiddlewareContext,
-        next: NextFunction
-      ) {
+      function getJobFnFromRegistry(ctx, next) {
         const {
           job: { jobtype },
         } = ctx;
         ctx.fn = registry[jobtype];
-
-        if (!ctx.fn)
-          throw new Error(`No jobtype registered: ${jobtype}`);
-
         return next();
       },
-      async function callJobFn(
-        ctx: MiddlewareContext,
-        next: NextFunction
-      ) {
+      async function callJobFn(ctx, next) {
         const {
           fn,
-          job: { args },
+          job: { jobtype, args },
         } = ctx;
+        if (!fn) throw new Error(`No jobtype registered: ${jobtype}`);
         const thunkOrPromise = await fn(...args);
         if (typeof thunkOrPromise === "function") {
           await thunkOrPromise(ctx);
@@ -271,14 +270,14 @@ export default class Worker extends EventEmitter {
   }
 
   /**
-  * Handles a job from the server by executing it and either acknowledging
-  * or failing the job when done
-  *
-  * @private
-  * @param  {JobPayload} job the job payload from the server
-  * @return {Promise<string>} 'ack' or 'fail' depending on job handling resu
-  */
-  async handle(job: JobPayload): Promise<string> {
+   * Handles a job from the server by executing it and either acknowledging
+   * or failing the job when done
+   *
+   * @private
+   * @param  {JobPayload} job the job payload from the server
+   * @return {Promise<string>} 'ack' or 'fail' depending on job handling resu
+   */
+  private async handle(job: JobPayload): Promise<string> {
     const { jid } = job;
     try {
       debug(`executing ${jid}`);
@@ -296,9 +295,9 @@ export default class Worker extends EventEmitter {
   }
 
   /**
-  * @private
-  */
-  trapSignals() {
+   * @private
+   */
+  private trapSignals(): void {
     // istanbul ignore next
     process
       .once("SIGTERM", () => this.stop())
@@ -306,7 +305,7 @@ export default class Worker extends EventEmitter {
       .once("SIGINT", () => this.stop());
   }
 
-  static removeSignalHandlers() {
+  private static removeSignalHandlers(): void {
     process
       .removeAllListeners("SIGTERM")
       .removeAllListeners("SIGTSTP")

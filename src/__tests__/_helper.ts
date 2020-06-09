@@ -1,10 +1,9 @@
-import { TestInterface } from 'ava';
-import { Socket, createServer, Server } from 'net';
-const uuid = require('uuid/v4');
-import getPort from 'get-port';
-import Client from '../client';
+import { TestInterface } from "ava";
+import { Socket, createServer, Server } from "net";
+import { v4 as uuid } from "uuid";
+import getPort from "get-port";
+import Client from "../client";
 import { JobPayload, PartialJobPayload } from "../job";
-import { Command } from "../connection";
 
 export type ServerControl = {
   socket: Socket;
@@ -12,7 +11,7 @@ export type ServerControl = {
   data?: string;
 };
 
-export const mockServer = () => {
+export const mockServer = (): Server => {
   const server = createServer();
 
   server.on("connection", (socket) => {
@@ -38,7 +37,11 @@ export const mockServer = () => {
   return server;
 };
 
-export const mocked = async (fn: (server: Server, port: number) => any | void) => {
+type ServerUser = {
+  (server: Server, port: number): Promise<unknown>;
+};
+
+export const mocked = async (fn: ServerUser): ReturnType<ServerUser> => {
   const server = mockServer();
   const port = await getPort();
   server.listen(port, "127.0.0.1");
@@ -81,15 +84,15 @@ mocked.info = () => ({ socket }: ServerControl) => {
   socket.write(`$${json.length}\r\n${json}\r\n`);
 };
 
-export const sleep = (ms: number, value: any = true) => {
+export const sleep = (ms: number, value?: unknown): Promise<unknown> => {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 };
 
-export const randQueue = (label: string = "test") => {
+export const randQueue = (label = "test"): string => {
   return `${label}-${uuid().slice(0, 6)}`;
 };
 
-export const createJob = (...args: any[]): PartialJobPayload => {
+export const createJob = (...args: unknown[]): PartialJobPayload => {
   return {
     jobtype: "testJob",
     queue: randQueue(),
@@ -97,9 +100,13 @@ export const createJob = (...args: any[]): PartialJobPayload => {
   };
 };
 
-export const push = async (
-  { args, queue, jobtype }: { args?: any[], queue?: string, jobtype?: string } = {}
-) => {
+export const push = async ({
+  args,
+  queue,
+  jobtype,
+}: { args?: unknown[]; queue?: string; jobtype?: string } = {}): Promise<
+  JobPayload
+> => {
   const client = new Client();
 
   const job = client.job(jobtype || "test");
@@ -113,9 +120,9 @@ export const push = async (
   return job;
 };
 
-export const flush = () => new Client().flush();
+export const flush = (): Promise<string> => new Client().flush();
 
-export function registerCleaner(test: TestInterface) {
+export function registerCleaner(test: TestInterface): void {
   test.beforeEach(async () => {
     await flush();
   });

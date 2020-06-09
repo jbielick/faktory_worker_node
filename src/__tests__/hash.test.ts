@@ -1,6 +1,7 @@
-import test from 'ava';
-import { createHash } from 'crypto';
-import hash from '../hash';
+import test from "ava";
+
+import { createHash } from "crypto";
+import hash from "../hash";
 
 test("client builds a hex pwdhash with salt", (t) => {
   const iterations = 10;

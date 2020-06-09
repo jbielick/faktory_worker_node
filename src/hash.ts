@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+import { createHash } from "crypto";
 
 /**
  * hashes the password with server-provided salt
@@ -8,12 +8,16 @@ const crypto = require('crypto');
  * @return {String}            the password hash
  * @private
  */
-export default function hash(password: string, salt: string, iterations: number): string {
-  let current = crypto.createHash('sha256').update(`${password}${salt}`);
+export default function hash(
+  password: string,
+  salt: string,
+  iterations: number
+): string {
+  let hash = createHash("sha256").update(`${password}${salt}`);
 
   for (let i = 1; i < iterations; i += 1) {
-    current = crypto.createHash('sha256').update(current.digest());
+    hash = createHash("sha256").update(hash.digest());
   }
 
-  return current.digest('hex');
-};
+  return hash.digest("hex");
+}
