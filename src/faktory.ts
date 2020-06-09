@@ -212,11 +212,11 @@ export function create(): FaktoryControl {
     },
 
     /**
-     * Starts a worker. Doesn't resolve until the worker is shut down. Only call this
-     * once per-process.
+     * Starts a worker. Resolves when the worker has connected and started working.
+     * Call .stop() to stop the worker.
      *
-     * @param  {object} options options to {@link Worker}
-     * @return {Promise}         the {@link Worker.work} promise
+     * @param  {WorkerOptions} options options to {@link Worker}
+     * @return {Promise<Worker>}         the {@link Worker.work} promise
      * @instance
      * @example
      * // this keeps the process open and can be `await`ed
@@ -231,7 +231,7 @@ export function create(): FaktoryControl {
     /**
      * Stops the worker previously started.
      *
-     * @return {promise} promise returned by {@link Worker.stop}
+     * @return {Promise<void>} promise returned by {@link Worker.stop}
      * @instance
      * @example
      * // previously

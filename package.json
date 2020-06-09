@@ -1,6 +1,6 @@
 {
   "name": "faktory-worker",
-  "version": "3.3.6",
+  "version": "4.0.0-beta.1",
   "description": "A faktory worker framework for node apps",
   "type": "commonjs",
   "main": "./lib/faktory.js",
@@ -19,7 +19,7 @@
     "lint": "eslint . --ext .ts",
     "htmldocs": "jsdoc . lib -d docs --readme README.md --pedantic",
     "docs": "jsdoc2md --files lib/*.js --template docs/template.hbs > docs/api.md",
-    "preversion": "npm run lint && npm run build && npm run test && npm run docs",
+    "prepublish": "npm run lint && npm run build && npm run test && npm run docs",
     "version": "git add docs/ package.json",
     "postversion": "git push && git push --tags"
   },
