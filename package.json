@@ -2,12 +2,14 @@
   "name": "faktory-worker",
   "version": "3.3.6",
   "description": "A faktory worker framework for node apps",
-  "main": "lib/faktory.js",
+  "type": "commonjs",
+  "main": "./lib/faktory.js",
+  "types": "./lib/faktory.d.ts",
   "author": "Josh Bielick <jbielick@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "watch": "tsc -w",
-    "build": "tsc",
+    "watch": "npm run clean && tsc -w",
+    "build": "npm run clean && tsc",
     "clean": "rm -rf lib/*",
     "test": "nyc --cache ava src/__tests__/**/*",
     "test:unit": "nyc --cache ava src/__tests__/unit/*",
@@ -51,7 +53,6 @@
   "engines": {
     "node": ">=7"
   },
-  "types": "lib/index.d.ts",
   "devDependencies": {
     "@ava/typescript": "^1.1.1",
     "@types/debug": "^4.1.5",

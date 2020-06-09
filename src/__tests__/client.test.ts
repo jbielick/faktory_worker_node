@@ -1,7 +1,7 @@
 import test from "ava";
 
-import Client from "../client";
-import Job, { JobPayload } from "../job";
+import { Client } from "../client";
+import { Job, JobPayload } from "../job";
 import { mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);

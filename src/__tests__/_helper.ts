@@ -2,7 +2,7 @@ import { TestInterface } from "ava";
 import { Socket, createServer, Server } from "net";
 import { v4 as uuid } from "uuid";
 import getPort from "get-port";
-import Client from "../client";
+import { Client } from "../client";
 import { JobPayload, PartialJobPayload } from "../job";
 
 export type ServerControl = {
@@ -41,7 +41,7 @@ type ServerUser = {
   (server: Server, port: number): Promise<unknown>;
 };
 
-export const mocked = async (fn: ServerUser): ReturnType<ServerUser> => {
+export const mocked = async (fn: ServerUser): Promise<unknown> => {
   const server = mockServer();
   const port = await getPort();
   server.listen(port, "127.0.0.1");

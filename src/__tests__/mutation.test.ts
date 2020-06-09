@@ -1,7 +1,7 @@
 import test from "ava";
 
-import Client from "../client";
-import Mutation, { SCHEDULED, RETRIES, DEAD } from "../mutation";
+import { Client } from "../client";
+import { Mutation, SCHEDULED, RETRIES, DEAD } from "../mutation";
 import { mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);

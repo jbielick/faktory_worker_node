@@ -3,7 +3,7 @@ import { strictEqual } from "assert";
 import { EventEmitter } from "events";
 import makeDebug from "debug";
 
-import Parser from "./parser";
+import { Parser } from "./parser";
 
 const debug = makeDebug("faktory-worker:connection");
 
@@ -50,7 +50,7 @@ type RequestCallback = {
  *
  * @private
  */
-export default class Connection extends EventEmitter {
+export class Connection extends EventEmitter {
   connected: boolean;
   closing: boolean;
   host: string | undefined;

@@ -1,6 +1,7 @@
 import test from "ava";
-import Job from "../job";
-import Client from "../client";
+
+import { Job } from "../job";
+import { Client } from "../client";
 
 test(".jid: generates a uuid jid", (t) => {
   t.truthy(Job.jid().length > 8);

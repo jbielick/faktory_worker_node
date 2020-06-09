@@ -1,6 +1,6 @@
-import encode from "./encode";
-import { JobType } from "./types";
-import Client from "./client";
+import { encode } from "./utils";
+import { JobType } from "./job";
+import { Client } from "./client";
 
 const MUTATE = "MUTATE";
 
@@ -48,7 +48,7 @@ type Command = {
  * !!! Please be warned: MUTATE commands can be slow and/or resource intensive.
  * **They should not be used as part of your application logic.**
  */
-export default class Mutation {
+export class Mutation {
   client: Client;
   target: Target;
   filter: Filter;
