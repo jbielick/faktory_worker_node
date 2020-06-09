@@ -1,8 +1,8 @@
 import test from "ava";
 
-import create from "../faktory";
-import Client from "../client";
-import Worker from "../worker";
+import { create } from "../faktory";
+import { Client } from "../client";
+import { Worker } from "../worker";
 import { sleep, mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);

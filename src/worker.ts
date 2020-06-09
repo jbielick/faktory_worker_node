@@ -1,24 +1,99 @@
-import {
-  Middleware,
-  Registry,
-  JobFunction,
-  JobType,
-  MiddlewareContext,
-} from "./types";
-import { JobPayload } from "./job";
-
 import makeDebug from "debug";
 import { v4 as uuid } from "uuid";
-import { ComposedMiddleware } from "koa-compose";
-import compose from "koa-compose";
+import { strict as assert } from "assert";
+import compose, {
+  ComposedMiddleware,
+  Middleware as KoaMiddleware,
+} from "koa-compose";
 import { EventEmitter } from "events";
 
-import Client, { ClientOptions } from "./client";
-import wrapNonErrors from "./wrap-non-errors";
-import sleep from "./sleep";
+import { JobPayload, JobType } from "./job";
+import { Client, ClientOptions } from "./client";
+import { wrapNonErrors } from "./utils";
+import { sleep } from "./utils";
 
 const debug = makeDebug("faktory-worker:worker");
 const START_DELAY = process.env.NODE_ENV === "test" ? 0 : 5;
+
+/**
+ * A lookup table holding the jobtype constants mapped to their job functions
+ *
+ * @typedef Registry
+ * @type  {Object.<Jobtype, JobFunction>}
+ * @see external:Jobtype
+ * @see external:JobFunction
+ * @example
+ * {
+ *   SendWelcomeUser: (id) => {
+ *     // job fn
+ *   },
+ *   GenerateThumbnail: (id, size) => {
+ *     // job fn
+ *   }
+ * }
+ */
+export type Registry = {
+  [jobtype: string]: JobFunction;
+};
+
+/**
+ * A function that executes work
+ *
+ * @typedef JobFunction
+ * @type {function}
+ * @external
+ * @param {...*} args arguments from the job payload
+ * @example
+ * function(...args) {
+ *   // does something meaningful
+ * }
+ */
+export type JobFunctionContextWrapper = {
+  (...args: unknown[]): ContextProvider;
+};
+export type UnWrappedJobFunction = {
+  (...args: unknown[]): unknown;
+};
+export type JobFunction = JobFunctionContextWrapper | UnWrappedJobFunction;
+
+/**
+ * A function returned by a job function that will be called with the job context as its
+ * only argument and awaited. This exists to allow you to define simple job functions that
+ * only accept their job args, but in many cases you might need the job's custom properties
+ * or stateful connections (like a database connection) in your job and want to attach
+ * a connection for your job function to use without having to create it itself.
+ *
+ * @typedef ContextProvider
+ * @type {function}
+ * @param {object} ctx context object containing the job and any other data attached
+ *                     via userland-middleware
+ * @example
+ * // assumes you have middleware that attaches `db` to `ctx`
+ *
+ * faktory.register('UserWelcomer', (...args) => async (ctx) => {
+ *   const [ id ] = args;
+ *   const user = await ctx.db.users.find(id);
+ *   const email = new WelcomeEmail(user);
+ *   await email.deliver();
+ * });
+ * @see  Context
+ */
+
+export type ContextProvider = (ctx: MiddlewareContext) => unknown;
+
+/**
+ * A context object passed through middleware and to a job thunk
+ *
+ * @typedef Context
+ * @type {object}
+ * @property {object} Context.job the job payload
+ * @property {function} Context.fn a reference to the job function
+ */
+export interface MiddlewareContext {
+  job: JobPayload;
+  fn?: JobFunction;
+}
+export type Middleware = KoaMiddleware<MiddlewareContext>;
 
 export type WorkerOptions = {
   wid?: string;
@@ -45,21 +120,21 @@ export type WorkerOptions = {
  *
  * worker.work();
  */
-export default class Worker extends EventEmitter {
-  wid: string;
+export class Worker extends EventEmitter {
+  readonly wid: string;
   private concurrency: number;
   private shutdownTimeout: number;
   private beatInterval: number;
-  queues: string[];
-  private middleware: Middleware[];
-  private registry: Registry;
+  readonly queues: string[];
+  readonly middleware: Middleware[];
+  private readonly registry: Registry;
   private quieted: boolean | undefined;
   private processors: {
     [name: string]: Promise<void>;
   };
   private execute: ComposedMiddleware<MiddlewareContext>;
   private heartbeat: NodeJS.Timer;
-  client: Client;
+  readonly client: Client;
 
   /**
    * @param {object} [options]
@@ -145,17 +220,6 @@ export default class Worker extends EventEmitter {
 
   onerror(error) {
     console.error(error);
-  }
-
-  /**
-   * registers a job function with the worker
-   *
-   * @param jobtype name of the job
-   * @param fn the job function or job function wrapper
-   */
-  register(jobtype: JobType, fn: JobFunction): Worker {
-    this.registry[jobtype] = fn;
-    return this;
   }
 
   /**
@@ -296,6 +360,48 @@ export default class Worker extends EventEmitter {
       debug(`FAIL ${jid}`);
       return "fail";
     }
+  }
+
+  /**
+   * Adds a middleware function to the stack
+   *
+   * @param  {Function} fn koa-compose-style middleware function
+   * @return {FaktoryControl}      this
+   * @instance
+   * @see  {@link https://github.com/koajs/koa/blob/master/docs/guide.md#writing-middleware|koa middleware}
+   * @example
+   * faktory.use(async (ctx, next) => {
+   *   // a pool you created to hold database connections
+   *   pool.use(async (conn) => {
+   *     ctx.db = conn;
+   *     await next();
+   *   });
+   * });
+   */
+  use(fn: Middleware): Worker {
+    assert(typeof fn === "function");
+    debug("use %s", fn.name || "-");
+    this.middleware.push(fn);
+    return this;
+  }
+
+  /**
+   * Adds a {@link external:JobFunction|JobFunction} to the {@link Registry}
+   *
+   * @param  {external:Jobtype}   name string descriptor for the jobtype
+   * @param  {external:JobFunction} fn
+   * @return {FaktoryControl}        this
+   * @instance
+   * @example
+   * faktory.register('MyJob', (...args) => {
+   *   // some work
+   * });
+   */
+  register(name: JobType, fn: JobFunction): Worker {
+    assert(typeof fn === "function", "a registered job must be a function");
+    debug("registered %s", name);
+    this.registry[name] = fn;
+    return this;
   }
 
   /**

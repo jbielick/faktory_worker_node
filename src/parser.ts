@@ -9,7 +9,7 @@ interface Adapter {
 /**
  * @private
  */
-export default class Parser extends EventEmitter {
+export class Parser extends EventEmitter {
   adapter: Adapter;
 
   constructor() {

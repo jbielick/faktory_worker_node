@@ -1,5 +1,20 @@
 import { v4 as uuid } from "uuid";
-import Client from "./client";
+import { Client } from "./client";
+
+/**
+ * Discriminator used by a worker to decide how to execute a job. This will be the name you
+ * used during register.
+ *
+ * @typedef Jobtype
+ * @type {string}
+ * @external
+ * @example
+ * // where `MyFunction` is the jobtype
+ *
+ * faktory.register('MyFunction', () => {})
+ * @see  {@link https://github.com/contribsys/faktory/wiki/The-Job-Payload}
+ */
+export type JobType = string;
 
 export interface JobCustomParams {
   [propName: string]: unknown;
@@ -54,7 +69,7 @@ export type JobPayload = PartialJobPayload & {
  * const client = await faktory.connect();
  * const job = client.job('SendWelcomeEmail', id);
  */
-export default class Job {
+export class Job {
   client: Client;
   payload: JobPayload;
   /**

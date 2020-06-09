@@ -1,7 +1,7 @@
 import test from "ava";
 
-import Worker from "../worker";
-import { mocked, registerCleaner } from "./_helper";
+import { Worker } from "../worker";
+import { sleep, mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);
 
@@ -82,5 +82,26 @@ test("hearbeats", async (t) => {
       worker = new Worker({ concurrency: 1, port, beatInterval: 0.1 });
       worker.work();
     });
+  });
+});
+
+test(".work() creates a worker, runs, then resolves the worker", async (t) => {
+  t.plan(3);
+  await mocked(async (server, port) => {
+    server
+      .on("BEAT", ({ socket }) => {
+        socket.write("+OK\r\n");
+        t.true(true);
+      })
+      .on("FETCH", async ({ socket }) => {
+        await sleep(10);
+        t.true(true);
+        socket.write("$-1\r\n");
+      });
+    const worker = await new Worker({ port, concurrency: 1 }).work();
+
+    t.true(worker instanceof Worker);
+
+    await worker.stop();
   });
 });

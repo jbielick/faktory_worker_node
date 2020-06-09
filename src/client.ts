@@ -4,15 +4,12 @@ import { unescape } from "querystring";
 import { hostname } from "os";
 import { createPool } from "generic-pool";
 
-import encode from "./encode";
-import Job, { JobPayload } from "./job";
-import hash from "./hash";
-import Mutation, { RETRIES, DEAD, SCHEDULED } from "./mutation";
-import Connection, { Greeting } from "./connection";
-import ConnectionFactory from "./connection-factory";
+import { encode, hash } from "./utils";
+import { Job, JobPayload, JobType } from "./job";
+import { Mutation, RETRIES, DEAD, SCHEDULED } from "./mutation";
+import { Connection, Greeting, Command } from "./connection";
+import { ConnectionFactory } from "./connection-factory";
 import { Pool } from "generic-pool";
-import { JobType } from "./types";
-import { Command } from "./connection";
 
 const debug = makeDebug("faktory-worker:client");
 const heartDebug = makeDebug("faktory-worker:client:heart");
@@ -75,7 +72,7 @@ export type ServerInfo = {
  * const job = await client.fetch('default');
  *
  */
-export default class Client {
+export class Client {
   password?: string;
   labels: string[];
   wid?: string;

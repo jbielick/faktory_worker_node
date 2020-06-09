@@ -1,6 +1,6 @@
 import test from "ava";
 
-import Connection from "../connection";
+import { Connection } from "../connection";
 import { mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);

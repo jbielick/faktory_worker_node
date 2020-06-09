@@ -1,9 +1,7 @@
 import test from "ava";
 
-import Worker from "../worker";
-import faktoryControlCreator from "../faktory";
+import { Worker, MiddlewareContext } from "../worker";
 import { sleep, push, registerCleaner } from "./_helper";
-import { MiddlewareContext } from "../types";
 
 registerCleaner(test);
 
@@ -72,13 +70,13 @@ test("invokes middleware in order", async (t) => {
 });
 
 test(".use() adds middleware to the stack", (t) => {
-  const instance = faktoryControlCreator();
+  const worker = new Worker();
   const mmw = () => {};
 
-  instance.use(mmw);
+  worker.use(mmw);
 
   t.is(
-    instance.middleware[0],
+    worker.middleware[0],
     mmw,
     "middleware function not added to .middleware"
   );
@@ -90,24 +88,24 @@ type MyAppContext = {
 
 test("middleware context is passed to job thunk", async (t) => {
   const { queue, jobtype } = await push({ args: [1] });
-  const control = faktoryControlCreator();
+  const worker = new Worker({ queues: [queue], concurrency: 1 });
 
-  control.use((ctx: MyAppContext, next) => {
+  worker.use((ctx: MyAppContext, next) => {
     ctx.memo = ["hello"];
     return next();
   });
-  control.use((ctx: MyAppContext, next) => {
+  worker.use((ctx: MyAppContext, next) => {
     ctx.memo.push("world");
     return next();
   });
 
   await new Promise((resolve) => {
-    control.register(jobtype, (...args) => ({ memo }: { memo: string[] }) => {
+    worker.register(jobtype, (...args) => ({ memo }: { memo: string[] }) => {
       t.deepEqual(args, [1], "args not correct");
       t.deepEqual(memo, ["hello", "world"]);
-      control.stop();
+      worker.stop();
       resolve();
     });
-    control.work({ queues: [queue], concurrency: 1 });
+    worker.work();
   });
 });

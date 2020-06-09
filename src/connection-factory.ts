@@ -1,7 +1,7 @@
 import makeDebug from "debug";
-import Connection, { Greeting } from "./connection";
+import { Connection, Greeting } from "./connection";
 import { Factory } from "generic-pool";
-import sleep from "./sleep";
+import { sleep } from "./utils";
 
 const debug = makeDebug("faktory-worker:connection-pool");
 
@@ -14,7 +14,7 @@ type handshaker = {
  * connected before lending them
  * @private
  */
-export default class ConnectionFactory implements Factory<Connection> {
+export class ConnectionFactory implements Factory<Connection> {
   host: string;
   port: string | number;
   handshake: handshaker;

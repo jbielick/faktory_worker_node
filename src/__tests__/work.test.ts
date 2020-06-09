@@ -1,8 +1,7 @@
 import test from "ava";
 
-import Worker, { WorkerOptions } from "../worker";
+import { Worker, WorkerOptions, MiddlewareContext } from "../worker";
 import { sleep, push, mocked, registerCleaner } from "./_helper";
-import { MiddlewareContext } from "../types";
 
 const concurrency = 1;
 

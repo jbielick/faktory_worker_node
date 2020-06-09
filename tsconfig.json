@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
-    "module": "commonjs",
+    "module": "CommonJS",
     "target": "ES6",
     "noImplicitAny": true,
     "strictNullChecks": true,
