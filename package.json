@@ -40,7 +40,7 @@
     "node": ">=7"
   },
   "devDependencies": {
-    "ava": "^0.25.0",
+    "ava": "^3.9.0",
     "coveralls": "3.1.0",
     "eslint": "^4.10",
     "eslint-config-airbnb-base": "13.2.0",
