@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-set -ex
+set -e
 
-docker run \
+exec docker run \
   --rm \
   $@ \
   -p 7419:7419 \
   -p 7420:7420 \
-  contribsys/faktory:1.0.1 \
+  contribsys/faktory:1.4.1 \
   /faktory -b :7419
