@@ -27,13 +27,13 @@ npm install faktory-worker
 ### Pushing jobs
 
 ```js
-const faktory = require('faktory-worker');
+const faktory = require("faktory-worker");
 
 (async () => {
   const client = await faktory.connect();
-  await client.job('ResizeImage', { id: 333, size: 'thumb' }).push();
+  await client.job("ResizeImage", { id: 333, size: "thumb" }).push();
   await client.close(); // remember to disconnect!
-})().catch(e => console.error(e));
+})().catch((e) => console.error(e));
 ```
 
 A job is a payload of keys and values according to [the faktory job payload specification](https://github.com/contribsys/faktory/wiki/The-Job-Payload). Any keys provided will be passed to the faktory server during `PUSH`. A `jid` (uuid) is created automatically for your job when using this library. See [the spec](https://github.com/contribsys/faktory/wiki/The-Job-Payload) for more options and defaults.
@@ -41,9 +41,9 @@ A job is a payload of keys and values according to [the faktory job payload spec
 ### Processing jobs
 
 ```js
-const faktory = require('faktory-worker');
+const faktory = require("faktory-worker");
 
-faktory.register('ResizeImage', async ({ id, size }) => {
+faktory.register("ResizeImage", async ({ id, size }) => {
   const image = await Image.find(id);
   await image.resize(size);
 });
@@ -55,17 +55,31 @@ A job function can be a sync or async function. Simply return a promise or use `
 
 `faktory.work()` traps `INT` and `TERM` signals so that it can gracefully shut down and finish any in-progress jobs before the `options.timeout` is reached.
 
+### Error Handling
+
+A Faktory `Worker` emits several events that can be used to handle errors. When a job function throws an error, it is caught and the job is `FAIL`ed. You can listen for a `fail` event to do something with these errors (like send a message to an error aggregator).
+
+An `error` event is emitted when an unexpected error occurs in the this library. If no listener is registered for the `error` event, a default handler is added.
+
+```js
+const worker = await faktory.work();
+
+worker.on("fail", ({ job, error }) => {
+  // do something with error
+});
+```
+
 ### Middleware
 
 ```js
-const faktory = require('faktory-worker');
+const faktory = require("faktory-worker");
 
 faktory.use(async (ctx, next) => {
-  const start = process.hrtime()
-  await next()
-  const time = process.hrtime(start)
-  console.info('%s took %ds %dms', ctx.job.jobtype, time[0], time[1] / 1e6)
-})
+  const start = process.hrtime();
+  await next();
+  const time = process.hrtime(start);
+  console.info("%s took %ds %dms", ctx.job.jobtype, time[0], time[1] / 1e6);
+});
 
 faktory.work();
 ```
@@ -92,8 +106,7 @@ Here are the defaults:
 
 ```js
 await faktory.work({
-
-  host: process.env.FAKTORY_URL || '127.0.0.1',
+  host: process.env.FAKTORY_URL || "127.0.0.1",
 
   // default: 7419 -- can extracted from FAKTORY_URL env var
   port: 7419,
@@ -106,7 +119,7 @@ await faktory.work({
   concurrency: 20,
 
   // the queues the worker will process—remember to preserve default if overriding this
-  queues: ['default'],
+  queues: ["default"],
 
   // the number of milliseconds jobs have to complete after
   // receiving a graceful shutdown signal. After this timeout, in-progress jobs may be abruptly stopped.
@@ -127,38 +140,42 @@ Use `DEBUG=faktory*` to see related debug log lines.
 
 ## FAQ
 
-* How do I specify the Faktory server location?
+- How do I specify the Faktory server location?
 
 By default, it will connect to `tcp://localhost:7419`.
-Use FAKTORY_URL to specify the URL, e.g. `tcp://faktory.example.com:12345` or use FAKTORY_PROVIDER to specify the environment variable which contains the URL: `FAKTORY_PROVIDER=FAKTORYTOGO_URL`.  This level of
+Use FAKTORY_URL to specify the URL, e.g. `tcp://faktory.example.com:12345` or use FAKTORY_PROVIDER to specify the environment variable which contains the URL: `FAKTORY_PROVIDER=FAKTORYTOGO_URL`. This level of
 indirection is useful for SaaSes, Heroku Addons, etc.
 
-* How do I access the job payload in my function?
+- How do I access the job payload in my function?
 
 The function passed to `register` can be a thunk. The registered function will receive the job `args` and if that function returns a function, that returned function will be called and provided the execution context (`ctx`) which contains the raw `job` payload at `ctx.job`, containing all custom props and other metadata of the job payload.
 
 ```js
-faktory.register('JobWithHeaders', (...args) => async ({ job }) => {
-  const [ email ] = args;
+faktory.register("JobWithHeaders", (...args) => async ({ job }) => {
+  const [email] = args;
   I18n.locale = job.custom.locale;
   log(job.custom.txid);
   await sendEmail(email);
 });
 ```
 
-* How do I add middleware to the job execution stack?
+- How do I add middleware to the job execution stack?
 
 Because many jobs may share the same dependencies, the faktory job processor holds a middleware stack of functions that will execute _before_ the job function does. You can add middleware to this stack by calling `faktory.use` and providing a function to be called. The middleware execution in faktory-worker works exactly the same as [`koa`](https://github.com/koajs/koa).
 
 Here's an example of passing a pooled connection to every faktory job that's executed.
 
 ```js
-const { createPool } = require('generic-pool'); // any pool or connection library works
-const faktory = require('faktory');
+const { createPool } = require("generic-pool"); // any pool or connection library works
+const faktory = require("faktory");
 
 const pool = createPool({
-  create() { return new Client(); },
-  destroy(client) { return client.disconnect(); }
+  create() {
+    return new Client();
+  },
+  destroy(client) {
+    return client.disconnect();
+  },
 });
 
 faktory.use(async (ctx, next) => {
@@ -173,7 +190,7 @@ faktory.use(async (ctx, next) => {
   }
 });
 
-faktory.register('TouchRecord', (id) => async ({ db }) => {
+faktory.register("TouchRecord", (id) => async ({ db }) => {
   const record = await db.find(id);
   await record.touch();
 });
@@ -181,20 +198,20 @@ faktory.register('TouchRecord', (id) => async ({ db }) => {
 
 ## Features
 
- - [ ] CLI: Require jobs from folder and automatically register
- - [ ] Customizable logger
- - [ ] Pro features
- - [x] Mutate API
- - [x] Connection pooling
- - [x] Handle signals from server heartbeat response
- - [x] Middleware
- - [x] CLI
- - [x] Heartbeat
- - [x] Tests
- - [x] Authentication
- - [x] Fail jobs
- - [x] Add'l client commands API
- - [x] Labels
+- [ ] CLI: Require jobs from folder and automatically register
+- [ ] Customizable logger
+- [ ] Pro features
+- [x] Mutate API
+- [x] Connection pooling
+- [x] Handle signals from server heartbeat response
+- [x] Middleware
+- [x] CLI
+- [x] Heartbeat
+- [x] Tests
+- [x] Authentication
+- [x] Fail jobs
+- [x] Add'l client commands API
+- [x] Labels
 
 ## Development
 
