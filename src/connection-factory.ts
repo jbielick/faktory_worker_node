@@ -71,7 +71,7 @@ export class ConnectionFactory implements Factory<Connection> {
    */
   destroy(connection: Connection): Promise<void> {
     debug("-1");
-    connection.removeListener("error", this.onConnectionError);
+    connection.on("close", () => connection.removeAllListeners());
     return connection.close();
   }
 
