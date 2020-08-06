@@ -200,6 +200,7 @@ export class Worker extends EventEmitter {
    */
   async work(): Promise<Worker> {
     debug("work concurrency=%i", this.concurrency);
+    if (!this.listenerCount("error")) this.on("error", this.onerror);
     this.execute = this.createExecutor();
     await this.beat();
     this.heartbeat = setInterval(() => this.beat(), this.beatInterval);
@@ -383,6 +384,10 @@ export class Worker extends EventEmitter {
     debug("use %s", fn.name || "-");
     this.middleware.push(fn);
     return this;
+  }
+
+  onerror(error) {
+    console.error(error);
   }
 
   /**
