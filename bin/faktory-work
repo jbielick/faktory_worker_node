@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const faktory = require('../');
-const program = require('../lib/cli');
+const faktory = require("../lib/faktory");
+const program = require("../lib/cli");
 
 faktory.work(program).catch((error) => {
   console.error(error);

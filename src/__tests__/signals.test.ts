@@ -1,16 +1,9 @@
-const test = require('ava');
+import test from "ava";
 
-const {
-  sleep,
-  push,
-  mocked,
-  mockServer,
-  flush,
-} = require('./_helper');
-const { Worker } = require('../');
+import { Worker } from "../faktory";
+import { sleep, push, mocked, registerCleaner } from "./_helper";
 
-test.beforeEach(() => flush());
-test.afterEach.always(() => flush());
+registerCleaner(test);
 
 const concurrency = 1;
 
@@ -18,18 +11,13 @@ function create(options = {}) {
   return new Worker(Object.assign({ concurrency }, options));
 }
 
-test.beforeEach(() => flush());
-test.afterEach.always(() => flush());
-
-test('.quiet() stops job fetching', async t => {
+test(".quiet() stops job fetching", async (t) => {
   let fetched = 0;
   await mocked(async (server, port) => {
-    server
-      .once('BEAT', mocked.beat())
-      .on('FETCH', (...args) => {
-        fetched += 1;
-        mocked.fetch(null)(...args);
-      });
+    server.once("BEAT", mocked.beat()).on("FETCH", (serverControl) => {
+      fetched += 1;
+      mocked.fetch(null)(serverControl);
+    });
 
     const worker = create({ port });
 
@@ -45,42 +33,42 @@ test('.quiet() stops job fetching', async t => {
   });
 });
 
-test('.stop() breaks the work loop', async t => {
+test(".stop() breaks the work loop", async (t) => {
   let called = 0;
   const { queue, jobtype } = await push();
   await push({ queue, jobtype });
 
-  const stop = await new Promise((resolve, reject) => {
+  const stop: Function = await new Promise((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
-        [jobtype]: async (...args) => {
-          resolve(async () => worker.stop());
+        [jobtype]: async () => {
+          resolve(() => worker.stop());
           called += 1;
-        }
-      }
+        },
+      },
     });
 
     worker.work();
   });
   await stop();
-  t.is(called, 1, 'continued fetching after .stop');
+  t.is(called, 1, "continued fetching after .stop");
 });
 
-test('.stop() allows in-progress jobs to finish', async t => {
+test(".stop() allows in-progress jobs to finish", async (t) => {
   const { queue, jobtype } = await push();
 
-  const stop = await new Promise(async (resolve) => {
+  const stop: Function = await new Promise((resolve) => {
     const worker = create({
       queues: [queue],
       timeout: 250,
       registry: {
         [jobtype]: async () => {
-          resolve(async () => worker.stop());
+          resolve(() => worker.stop());
           await sleep(100);
           t.pass();
-        }
-      }
+        },
+      },
     });
 
     worker.work();
@@ -88,12 +76,13 @@ test('.stop() allows in-progress jobs to finish', async t => {
   await stop();
 });
 
-test('worker drains pool after stop timeout', async t => {
+test("worker drains pool after stop timeout", async (t) => {
   const { queue, jobtype } = await push();
   let exited = false;
 
   const originalExit = process.exit;
-  process.exit = (code) => {
+  // @ts-ignore
+  process.exit = (code?: number) => {
     exited = true;
     process.exit = originalExit;
   };
@@ -108,15 +97,15 @@ test('worker drains pool after stop timeout', async t => {
           await sleep(100);
           t.truthy(exited);
           resolve();
-        }
-      }
+        },
+      },
     });
 
     worker.work();
   });
 });
 
-test.serial('SIGTERM stops the worker', async t => {
+test.serial("SIGTERM stops the worker", async (t) => {
   t.plan(1);
   const worker = create();
 
@@ -124,19 +113,19 @@ test.serial('SIGTERM stops the worker', async t => {
 
   const originalStop = worker.stop.bind(worker);
   const promise = new Promise((resolve) => {
-    worker.stop = () => {
+    worker.stop = async () => {
       t.pass();
       originalStop();
       resolve();
     };
   });
 
-  process.kill(process.pid, 'SIGTERM');
+  process.kill(process.pid, "SIGTERM");
 
-  return promise;
+  await promise;
 });
 
-test.serial('SIGINT stops the worker', async t => {
+test.serial("SIGINT stops the worker", async (t) => {
   t.plan(1);
   const worker = create();
 
@@ -144,19 +133,19 @@ test.serial('SIGINT stops the worker', async t => {
 
   const originalStop = worker.stop.bind(worker);
   const promise = new Promise((resolve) => {
-    worker.stop = () => {
+    worker.stop = async () => {
       t.pass();
       originalStop();
       resolve();
     };
   });
 
-  process.kill(process.pid, 'SIGINT');
+  process.kill(process.pid, "SIGINT");
 
-  return promise;
+  await promise;
 });
 
-test.serial('SIGTSTP quiets the worker', async t => {
+test.serial("SIGTSTP quiets the worker", async (t) => {
   t.plan(1);
   const worker = create();
 
@@ -171,17 +160,15 @@ test.serial('SIGTSTP quiets the worker', async t => {
     };
   });
 
-  process.kill(process.pid, 'SIGTSTP');
+  process.kill(process.pid, "SIGTSTP");
 
-  return promise;
+  await promise;
 });
 
-test('quiets when the heartbeat response says so', async t => {
+test("quiets when the heartbeat response says so", async (t) => {
   t.plan(1);
   await mocked(async (server, port) => {
-    server
-      .once('BEAT', mocked.beat('quiet'))
-      .on('FETCH', mocked.fetch(null));
+    server.once("BEAT", mocked.beat("quiet")).on("FETCH", mocked.fetch(null));
 
     const worker = create({ port });
 
@@ -200,18 +187,16 @@ test('quiets when the heartbeat response says so', async t => {
   });
 });
 
-test('quiets when the heartbeat response says so', async t => {
+test("stops when the heartbeat response says terminate", async (t) => {
   t.plan(1);
   await mocked(async (server, port) => {
-    server
-      .on('BEAT', mocked.beat('terminate'))
-      .on('FETCH', mocked.fetch(null));
+    server.on("BEAT", mocked.beat("terminate")).on("FETCH", mocked.fetch(null));
 
     const worker = create({ port });
 
     const originalStop = worker.stop.bind(worker);
     const promise = new Promise((resolve) => {
-      worker.stop = () => {
+      worker.stop = async () => {
         t.pass();
         originalStop();
         resolve();
