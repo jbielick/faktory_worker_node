@@ -219,10 +219,6 @@ export class Worker extends EventEmitter {
     this.processors[pid] = this.tick(pid);
   }
 
-  onerror(error) {
-    console.error(error);
-  }
-
   /**
    * Signals to the worker to discontinue fetching new jobs and allows the worker
    * to continue processing any currently-running jobs
