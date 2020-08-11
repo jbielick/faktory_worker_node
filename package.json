@@ -77,7 +77,7 @@
     "typescript": "^3.9.5"
   },
   "dependencies": {
-    "commander": "2.20.0",
+    "commander": "6.0.0",
     "debug": "^4.1.0",
     "generic-pool": "3.7.1",
     "koa-compose": "^4.1.0",
