@@ -28,6 +28,14 @@ S:::::::::::::::SS       T:::::::::T         OO:::::::::OO   P::::::::P
 -->
 # Contents
 
+## Modules
+
+<dl>
+<dt><a href="#module_faktory">faktory</a></dt>
+<dd><p>creates faktory singletons</p>
+</dd>
+</dl>
+
 ## Classes
 
 <dl>
@@ -37,7 +45,7 @@ underlying connections. Safe for concurrent use and tolerant of unexpected
 connection terminations. Use this object for all interactions with the factory server.</p>
 </dd>
 <dt><a href="#Job">Job</a></dt>
-<dd><p>A class wrapping a <a href="#external_JobPayload">JobPayload</a></p>
+<dd><p>A class wrapping a <a href="external:JobPayload">JobPayload</a></p>
 <p>Creating and pushing a job is typically accomplished by using
 a faktory client, which implements <code>.job</code> and automatically
 sets the client for the job when calling <code>.push</code> on the job later.</p>
@@ -58,43 +66,9 @@ started per-process.</p>
 </dd>
 </dl>
 
-## Typedefs
-
-<dl>
-<dt><a href="#JobThunk">JobThunk</a> : <code>function</code></dt>
-<dd><p>A function returned by a job function that will be called with the job context as its
-only argument and awaited. This exists to allow you to define simple job functions that
-only accept their job args, but in many cases you might need the job&#39;s custom properties
-or stateful connections (like a database connection) in your job and want to attach
-a connection for your job function to use without having to create it itself.</p>
-</dd>
-<dt><a href="#Context">Context</a> : <code>object</code></dt>
-<dd><p>A context object passed through middleware and to a job thunk</p>
-</dd>
-<dt><a href="#Registry">Registry</a> : <code>[ &#x27;Object&#x27; ].&lt;Jobtype, JobFunction&gt;</code></dt>
-<dd><p>A lookup table holding the jobtype constants mapped to their job functions</p>
-</dd>
-<dt><a href="#Command">Command</a> : <code>[ &#x27;Array&#x27; ].&lt;string&gt;</code></dt>
-<dd><p>A command to send the server in array form</p>
-</dd>
-</dl>
-
 ## External
 
 <dl>
-<dt><a href="#external_Jobtype">Jobtype</a> : <code>string</code></dt>
-<dd><p>Discriminator used by a worker to decide how to execute a job. This will be the name you
-used during register.</p>
-</dd>
-<dt><a href="#external_timestamp">timestamp</a> : <code>string</code></dt>
-<dd><p>An RFC3339-format datetime string</p>
-</dd>
-<dt><a href="#external_JobPayload">JobPayload</a> : <code>object</code></dt>
-<dd><p>A work unit that can be scheduled by the faktory work server and executed by clients</p>
-</dd>
-<dt><a href="#external_JobFunction">JobFunction</a> : <code>function</code></dt>
-<dd><p>A function that executes work</p>
-</dd>
 <dt><a href="#external_HI">HI</a> : <code>object</code></dt>
 <dd><p>An after-connect initial message from the server to handshake the connection</p>
 </dd>
@@ -105,6 +79,110 @@ used during register.</p>
 
 # API
 
+<a name="module_faktory"></a>
+
+## faktory
+creates faktory singletons
+
+
+* [faktory](#module_faktory)
+    * [.use(fn)](#module_faktory+use) ⇒ <code>FaktoryControl</code>
+    * [.register(name, fn)](#module_faktory+register) ⇒ <code>FaktoryControl</code>
+    * [.connect(...args)](#module_faktory+connect) ⇒ [<code>Client</code>](#Client)
+    * [.work(options)](#module_faktory+work) ⇒ <code>Promise</code>
+    * [.stop()](#module_faktory+stop) ⇒ <code>promise</code>
+
+<a name="module_faktory+use"></a>
+
+### faktory.use(fn) ⇒ <code>FaktoryControl</code>
+Adds a middleware function to the stack
+
+**Kind**: instance method of [<code>faktory</code>](#module_faktory)  
+**Returns**: <code>FaktoryControl</code> - this  
+**See**: [koa middleware](https://github.com/koajs/koa/blob/master/docs/guide.md#writing-middleware)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| fn | <code>function</code> | koa-compose-style middleware function |
+
+**Example**  
+```js
+faktory.use(async (ctx, next) => {
+  // a pool you created to hold database connections
+  pool.use(async (conn) => {
+    ctx.db = conn;
+    await next();
+  });
+});
+```
+<a name="module_faktory+register"></a>
+
+### faktory.register(name, fn) ⇒ <code>FaktoryControl</code>
+Adds a [JobFunction](external:JobFunction) to the [Registry](Registry)
+
+**Kind**: instance method of [<code>faktory</code>](#module_faktory)  
+**Returns**: <code>FaktoryControl</code> - this  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| name | <code>external:Jobtype</code> | string descriptor for the jobtype |
+| fn | <code>external:JobFunction</code> |  |
+
+**Example**  
+```js
+faktory.register('MyJob', (...args) => {
+  // some work
+});
+```
+<a name="module_faktory+connect"></a>
+
+### faktory.connect(...args) ⇒ [<code>Client</code>](#Client)
+Creates a new [Client](#Client)
+
+**Kind**: instance method of [<code>faktory</code>](#module_faktory)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ...args | <code>\*</code> | args forwarded to [Client](#Client) |
+
+**Example**  
+```js
+const client = await faktory.connect();
+
+await client.push(job);
+```
+<a name="module_faktory+work"></a>
+
+### faktory.work(options) ⇒ <code>Promise</code>
+Starts a worker. Doesn't resolve until the worker is shut down. Only call this
+once per-process.
+
+**Kind**: instance method of [<code>faktory</code>](#module_faktory)  
+**Returns**: <code>Promise</code> - the [Worker.work](Worker.work) promise  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| options | <code>object</code> | options to [Worker](#Worker) |
+
+**Example**  
+```js
+// this keeps the process open and can be `await`ed
+faktory.work();
+```
+<a name="module_faktory+stop"></a>
+
+### faktory.stop() ⇒ <code>promise</code>
+Stops the worker previously started.
+
+**Kind**: instance method of [<code>faktory</code>](#module_faktory)  
+**Returns**: <code>promise</code> - promise returned by [Worker.stop](Worker.stop)  
+**Example**  
+```js
+// previously
+faktory.work();
+
+faktory.stop();
+```
 <a name="Client"></a>
 
 ## Client
@@ -116,11 +194,11 @@ connection terminations. Use this object for all interactions with the factory s
 
 * [Client](#Client)
     * [new Client([options])](#new_Client_new)
-    * [.connect()](#Client+connect) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;self&gt;</code>
+    * [.connect()](#Client+connect) ⇒ [<code>[ &#x27;Promise&#x27; ].&lt;Client&gt;</code>](#Client)
     * [.close()](#Client+close) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;undefined&gt;</code>
     * [.job(jobtype, ...args)](#Client+job) ⇒ [<code>Job</code>](#Job)
     * [.send(...args)](#Client+send)
-    * [.fetch(...queues)](#Client+fetch) ⇒ <code>Promise.&lt;object&gt;</code> \| <code>null</code>
+    * [.fetch(...queues)](#Client+fetch) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;(object\|null)&gt;</code>
     * [.beat()](#Client+beat) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
     * [.push(job)](#Client+push) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
     * [.flush()](#Client+flush) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
@@ -153,7 +231,7 @@ const job = await client.fetch('default');
 ```
 <a name="Client+connect"></a>
 
-### client.connect() ⇒ <code>[ &#x27;Promise&#x27; ].&lt;self&gt;</code>
+### client.connect() ⇒ [<code>[ &#x27;Promise&#x27; ].&lt;Client&gt;</code>](#Client)
 Explicitly opens a connection and then closes it to test connectivity.
 Under normal circumstances you don't need to call this method as all of the
 communication methods will check out a connection before executing. If a connection is
@@ -161,7 +239,7 @@ not available, one will be created. This method exists to ensure connection is p
 if you need to do so. You can think of this like [sqlx#MustConnect](https://godoc.org/github.com/jmoiron/sqlx#MustConnect)
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;self&gt;</code> - resolves when a connection is opened  
+**Returns**: [<code>[ &#x27;Promise&#x27; ].&lt;Client&gt;</code>](#Client) - resolves when a connection is opened  
 <a name="Client+close"></a>
 
 ### client.close() ⇒ <code>[ &#x27;Promise&#x27; ].&lt;undefined&gt;</code>
@@ -198,11 +276,11 @@ the promise returned by the wrapped function is resolved or rejected.
 
 <a name="Client+fetch"></a>
 
-### client.fetch(...queues) ⇒ <code>Promise.&lt;object&gt;</code> \| <code>null</code>
+### client.fetch(...queues) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;(object\|null)&gt;</code>
 Fetches a job payload from the server from one of ...queues
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>Promise.&lt;object&gt;</code> \| <code>null</code> - a job payload if one is available, otherwise null  
+**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;(object\|null)&gt;</code> - a job payload if one is available, otherwise null  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -271,7 +349,7 @@ Sends a FAIL command to the server for a particular job ID with error informatio
 <a name="Job"></a>
 
 ## Job
-A class wrapping a [JobPayload](#external_JobPayload)
+A class wrapping a [JobPayload](external:JobPayload)
 
 Creating and pushing a job is typically accomplished by using
 a faktory client, which implements `.job` and automatically
@@ -305,7 +383,7 @@ Creates a job
 
 | Param | Type | Description |
 | --- | --- | --- |
-| jobtype | <code>string</code> | [Jobtype](#external_Jobtype) string |
+| jobtype | <code>string</code> | [Jobtype](external:Jobtype) string |
 | [client] | [<code>Client</code>](#Client) | a client to use for communicating to the server (if calling push) |
 
 **Example** *(with a faktory client)*  
@@ -562,10 +640,13 @@ started per-process.
 
 * [Worker](#Worker)
     * [new Worker([options])](#new_Worker_new)
-    * [.inProgress](#Worker+inProgress) ⇒ <code>array</code>
-    * [.work()](#Worker+work) ⇒ [<code>Worker</code>](#Worker)
-    * [.quiet()](#Worker+quiet) ⇒ <code>undefined</code>
+    * [.inProgress](#Worker+inProgress)
+    * [.work()](#Worker+work) ⇒
+    * [.quiet()](#Worker+quiet)
     * [.stop()](#Worker+stop) ⇒ <code>promise</code>
+    * [.beat()](#Worker+beat)
+    * [.use(fn)](#Worker+use) ⇒ <code>FaktoryControl</code>
+    * [.register(name, fn)](#Worker+register) ⇒ <code>FaktoryControl</code>
 
 <a name="new_Worker_new"></a>
 
@@ -580,7 +661,7 @@ started per-process.
 | [options.beatInterval] | <code>Number</code> | <code>15</code> | the amount of time in seconds between each                                             heartbeat |
 | [options.queues] | <code>[ &#x27;Array&#x27; ].&lt;string&gt;</code> | <code>[&#x27;default&#x27;]</code> | the queues this worker will fetch jobs from |
 | [options.middleware] | <code>[ &#x27;Array&#x27; ].&lt;function()&gt;</code> | <code>[]</code> | a set of middleware to run before performing                                               each job                                       in koa.js-style middleware execution signature |
-| [options.registry] | [<code>Registry</code>](#Registry) | <code>Registry</code> | the job registry to use when working |
+| [options.registry] | <code>Registry</code> | <code>Registry</code> | the job registry to use when working |
 | [options.poolSize] | <code>Number</code> | <code>concurrency+2</code> | the client connection pool size for                                                  this worker |
 
 **Example**  
@@ -593,18 +674,18 @@ worker.work();
 ```
 <a name="Worker+inProgress"></a>
 
-### worker.inProgress ⇒ <code>array</code>
-Returns an array of ids of processors with a job currently in progress
+### worker.inProgress
+Returns an array of promises, each of which is a processor promise
+doing work or waiting on fetch.
 
 **Kind**: instance property of [<code>Worker</code>](#Worker)  
-**Returns**: <code>array</code> - array of processor ids  
 <a name="Worker+work"></a>
 
-### worker.work() ⇒ [<code>Worker</code>](#Worker)
+### worker.work() ⇒
 starts the worker fetch loop and job processing
 
 **Kind**: instance method of [<code>Worker</code>](#Worker)  
-**Returns**: [<code>Worker</code>](#Worker) - self, when working has been stopped by a signal or concurrent
+**Returns**: self, when working has been stopped by a signal or concurrent
                        call to stop or quiet  
 **See**
 
@@ -613,7 +694,7 @@ starts the worker fetch loop and job processing
 
 <a name="Worker+quiet"></a>
 
-### worker.quiet() ⇒ <code>undefined</code>
+### worker.quiet()
 Signals to the worker to discontinue fetching new jobs and allows the worker
 to continue processing any currently-running jobs
 
@@ -625,155 +706,54 @@ stops the worker
 
 **Kind**: instance method of [<code>Worker</code>](#Worker)  
 **Returns**: <code>promise</code> - resolved when worker stops  
-<a name="JobThunk"></a>
+<a name="Worker+beat"></a>
 
-## JobThunk : <code>function</code>
-A function returned by a job function that will be called with the job context as its
-only argument and awaited. This exists to allow you to define simple job functions that
-only accept their job args, but in many cases you might need the job's custom properties
-or stateful connections (like a database connection) in your job and want to attach
-a connection for your job function to use without having to create it itself.
+### worker.beat()
+Sends a heartbeat for this server and interprets the response state (if present)
+to quiet or terminate the worker
 
-**Kind**: global typedef  
-**See**: Context  
+**Kind**: instance method of [<code>Worker</code>](#Worker)  
+<a name="Worker+use"></a>
+
+### worker.use(fn) ⇒ <code>FaktoryControl</code>
+Adds a middleware function to the stack
+
+**Kind**: instance method of [<code>Worker</code>](#Worker)  
+**Returns**: <code>FaktoryControl</code> - this  
+**See**: [koa middleware](https://github.com/koajs/koa/blob/master/docs/guide.md#writing-middleware)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| ctx | <code>object</code> | context object containing the job and any other data attached                     via userland-middleware |
+| fn | <code>function</code> | koa-compose-style middleware function |
 
 **Example**  
 ```js
-// assumes you have middleware that attaches `db` to `ctx`
-
-faktory.register('UserWelcomer', (...args) => (ctx) => {
-  const [ id ] = args;
-  const user = await ctx.db.users.find(id);
-  const email = new WelcomeEmail(user);
-  await email.deliver();
+faktory.use(async (ctx, next) => {
+  // a pool you created to hold database connections
+  pool.use(async (conn) => {
+    ctx.db = conn;
+    await next();
+  });
 });
 ```
-<a name="Context"></a>
+<a name="Worker+register"></a>
 
-## Context : <code>object</code>
-A context object passed through middleware and to a job thunk
+### worker.register(name, fn) ⇒ <code>FaktoryControl</code>
+Adds a [JobFunction](external:JobFunction) to the [Registry](Registry)
 
-**Kind**: global typedef  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| Context.job | <code>object</code> | the job payload |
-| Context.fn | <code>function</code> | a reference to the job function |
-
-<a name="Registry"></a>
-
-## Registry : <code>[ &#x27;Object&#x27; ].&lt;Jobtype, JobFunction&gt;</code>
-A lookup table holding the jobtype constants mapped to their job functions
-
-**Kind**: global typedef  
-**See**
-
-- external:Jobtype
-- external:JobFunction
-
-**Example**  
-```js
-{
-  SendWelcomeUser: (id) => {
-    // job fn
-  },
-  GenerateThumbnail: (id, size) => {
-    // job fn
-  }
-}
-```
-<a name="Command"></a>
-
-## Command : <code>[ &#x27;Array&#x27; ].&lt;string&gt;</code>
-A command to send the server in array form
-
-**Kind**: global typedef  
-**Example**  
-```js
-// multiple string arguments
-['FETCH', 'critical', 'default']
-
-// json string as an argument
-['PUSH', '{"jid": "123"}']
-
-// single string argument
-['ACK', '123']
-```
-<a name="external_Jobtype"></a>
-
-## Jobtype : <code>string</code>
-Discriminator used by a worker to decide how to execute a job. This will be the name you
-used during register.
-
-**Kind**: global external  
-**See**: [https://github.com/contribsys/faktory/wiki/The-Job-Payload](https://github.com/contribsys/faktory/wiki/The-Job-Payload)  
-**Example**  
-```js
-// where `MyFunction` is the jobtype
-
-faktory.register('MyFunction', () => {})
-```
-<a name="external_timestamp"></a>
-
-## timestamp : <code>string</code>
-An RFC3339-format datetime string
-
-**Kind**: global external  
-**Example**  
-```js
-"2002-10-02T10:00:00-05:00"
-"2002-10-02T15:00:00Z"
-"2002-10-02T15:00:00.05Z"
-
-new Date().toISOString();
-// => '2019-02-11T15:59:15.593Z'
-```
-<a name="external_JobPayload"></a>
-
-## JobPayload : <code>object</code>
-A work unit that can be scheduled by the faktory work server and executed by clients
-
-**Kind**: global external  
-**See**
-
-- [https://github.com/contribsys/faktory/wiki/The-Job-Payload](https://github.com/contribsys/faktory/wiki/The-Job-Payload)
-- [Faktory Protocol Specification - Work Units](https://github.com/contribsys/faktory/blob/master/docs/protocol-specification.md#work-units)
-
-**Properties**
-
-| Name | Type | Default | Description |
-| --- | --- | --- | --- |
-| [jid] | <code>string</code> | <code>&quot;uuid()&quot;</code> | globally unique ID for the job. |
-| jobtype | [<code>Jobtype</code>](#external_Jobtype) |  |  |
-| [queue] | <code>string</code> | <code>&quot;default&quot;</code> | which job queue to push this job onto. |
-| [args] | <code>array</code> | <code>[]</code> | parameters the worker should use when executing the job. |
-| [priority] | <code>number</code> | <code>5</code> | higher priority jobs are dequeued before lower priority jobs. |
-| [retry] | <code>number</code> | <code>25</code> | number of times to retry this job if it fails. 0 discards the                               failed job, -1 saves the failed job to the dead set. |
-| [at] | [<code>timestamp</code>](#external_timestamp) |  | run the job at approximately this time; immediately if blank |
-| [reserve_for] | <code>number</code> | <code>1800</code> | number of seconds a job may be held by a worker before it                                       is considered failed. |
-| custom | <code>object</code> |  | provides additional context to the worker executing the job. |
-
-<a name="external_JobFunction"></a>
-
-## JobFunction : <code>function</code>
-A function that executes work
-
-**Kind**: global external  
+**Kind**: instance method of [<code>Worker</code>](#Worker)  
+**Returns**: <code>FaktoryControl</code> - this  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| ...args | <code>\*</code> | arguments from the job payload |
+| name | <code>external:Jobtype</code> | string descriptor for the jobtype |
+| fn | <code>external:JobFunction</code> |  |
 
 **Example**  
 ```js
-function(...args) {
-  // does something meaningful
-}
+faktory.register('MyJob', (...args) => {
+  // some work
+});
 ```
 <a name="external_HI"></a>
 
