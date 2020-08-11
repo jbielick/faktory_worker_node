@@ -1,12 +1,11 @@
 sudo: required
 language: node_js
 node_js:
-  - 7
-  - 8
-  - 9
   - 10
   - 11
   - 12
+  - 13
+  - 14
 services:
   - docker
 before_script:
@@ -21,4 +20,4 @@ script:
   - npm run build
   - npm test
 after_success:
-  - './node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls'
+  - "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls"
