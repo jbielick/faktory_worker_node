@@ -1,3 +1,7 @@
+## 4.0.0 | 2020-08-10
+
+- Migrates the project to TypeScript
+
 ## 3.3.8 | 2020-08-06
 
 - Fixes an issue in which a connection may emit `error` _after_ error event listener is removed during connection teardown.
