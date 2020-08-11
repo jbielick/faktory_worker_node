@@ -7,7 +7,6 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "allowJs": true,
     "module": "CommonJS",
     "target": "ES6",
     "noImplicitAny": true,
@@ -16,7 +15,5 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitThis": true
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }

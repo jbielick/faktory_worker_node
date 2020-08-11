@@ -11,7 +11,7 @@
     "watch": "npm run clean && tsc -w",
     "build": "npm run clean && tsc",
     "clean": "rm -rf lib/*",
-    "test": "nyc --cache ava src/__tests__/**/*",
+    "test": "npm run build && nyc --cache ava src/__tests__/**/*",
     "test:unit": "nyc --cache ava src/__tests__/unit/*",
     "test:integration": "nyc --cache ava src/__tests__/integration/*",
     "test:watch": "npm run test -- -w",
