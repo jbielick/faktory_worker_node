@@ -19,7 +19,7 @@
     "lint": "eslint . --ext .ts",
     "htmldocs": "jsdoc . lib -d docs --readme README.md --pedantic",
     "docs": "jsdoc2md --files lib/*.js --template docs/template.hbs > docs/api.md",
-    "preversion": "npm run lint && npm run build && npm run test && npm run docs",
+    "preversion": "npm run lint && npm run test && npm run docs",
     "version": "git add docs/ package.json",
     "postversion": "git push && git push --tags"
   },
