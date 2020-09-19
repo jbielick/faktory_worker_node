@@ -250,7 +250,7 @@ export function create(): FaktoryControl {
   };
 }
 
-export { Worker, Client, Job, Mutation };
+export { Worker, WorkerOptions, Client, ClientOptions, Job, Mutation };
 const singleton = create();
 // exclusively for the typedescript declaration file
 export default singleton;
