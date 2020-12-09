@@ -3,7 +3,7 @@ import { strictEqual } from "assert";
 import { EventEmitter } from "events";
 import makeDebug from "debug";
 
-import { Parser } from "./parser";
+import RedisParser from "redis-parser";
 
 const debug = makeDebug("faktory-worker:connection");
 
@@ -38,9 +38,10 @@ export type ConnectionOptions = {
   password?: string;
 };
 
-type RequestCallback = {
-  (e: Error | null, response?: string): void;
-};
+interface PendingRequest {
+  resolve(message: string): void;
+  reject(error: Error): void;
+}
 
 /**
  * A connection to the faktory server for sending commands
@@ -55,9 +56,9 @@ export class Connection extends EventEmitter {
   closing: boolean;
   host: string | undefined;
   port: string | number;
-  pending: RequestCallback[];
+  pending: PendingRequest[];
   socket: Socket;
-  parser: Parser;
+  parser: RedisParser;
   lastError: Error;
 
   /**
@@ -70,7 +71,12 @@ export class Connection extends EventEmitter {
     this.port = port;
     this.connected = false;
     this.socket = new Socket();
-    this.parser = new Parser();
+    this.socket.setKeepAlive(true);
+    this.pending = [];
+    this.parser = new RedisParser({
+      returnReply: (response: string) => this.pending.pop()?.resolve(response),
+      returnError: (err: Error) => this.pending.pop()?.reject(err),
+    });
     this.listen();
   }
 
@@ -90,15 +96,10 @@ export class Connection extends EventEmitter {
   private listen(): Connection {
     this.socket
       .on("connect", this.onConnect.bind(this))
-      .on("data", (buffer) => this.parser.parse(buffer))
+      .on("data", this.parser.execute.bind(this.parser))
       .on("timeout", this.onTimeout.bind(this))
       .on("error", this.onError.bind(this))
       .on("close", this.onClose.bind(this));
-
-    this.parser
-      .on("message", this.onMessage.bind(this, null))
-      .on("error", this.onMessage.bind(this));
-
     return this;
   }
 
@@ -106,28 +107,19 @@ export class Connection extends EventEmitter {
    * Opens a connection to the server
    * @return {Promise} resolves with the server's greeting
    */
-  open(): Promise<Greeting> {
+  async open(): Promise<Greeting> {
+    if (this.connected) throw new Error("already connected!");
     debug("connecting");
 
-    return new Promise((resolve, reject) => {
-      this.pending = [
-        (err: Error, response: string) => {
-          if (err) return reject(err);
-          const greeting = JSON.parse(response.split(" ")[1]);
-          this.emit("greeting", greeting);
-          return resolve(greeting);
-        },
-      ];
-      const onceErrored = (err: Error) => {
-        reject(err);
-        this.socket.removeListener("error", onceErrored);
-      };
-      this.socket
-        .once("error", onceErrored)
-        .connect(<number>this.port, this.host || "", () => {
-          this.socket.removeListener("error", onceErrored);
-        });
+    const receiveGreetingResponse = new Promise((resolve, reject) => {
+      this.pending.unshift({ resolve, reject });
     });
+
+    this.socket.connect(<number>this.port, this.host || "");
+    const response = <string>await receiveGreetingResponse;
+    const greeting = JSON.parse(response.split(" ")[1]);
+    this.emit("greeting", greeting);
+    return greeting;
   }
 
   /**
@@ -136,7 +128,6 @@ export class Connection extends EventEmitter {
   private onConnect() {
     this.connected = true;
     this.emit("connect");
-    this.socket.setKeepAlive(true);
     this.setTimeout();
   }
 
@@ -144,7 +135,7 @@ export class Connection extends EventEmitter {
    * @private
    */
   private clearPending(err: Error) {
-    this.pending.forEach((callback) => callback(err));
+    this.pending.forEach(({ reject }) => reject(err));
   }
 
   /**
@@ -208,29 +199,14 @@ export class Connection extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       this.socket.write(`${commandString}\r\n`);
-      this.pending.push((err: Error, response: string) => {
-        debug("client=%o, server=%o", commandString, response);
-        if (err) return reject(err);
-        return resolve(response);
+      this.pending.unshift({
+        resolve: (message) => {
+          debug("client=%o, server=%o", commandString, message);
+          resolve(message);
+        },
+        reject,
       });
     });
-  }
-
-  /**
-   * @private
-   */
-  private onMessage(err: Error | null, message: string) {
-    debug(err || message);
-
-    const callback = this.pending.shift();
-
-    /* istanbul ignore next */
-    if (!callback) {
-      console.warn(`Dropped response: ${message}`);
-      return;
-    }
-
-    callback(err, message);
   }
 
   /**
@@ -248,7 +224,12 @@ export class Connection extends EventEmitter {
   close(): Promise<undefined> {
     this.closing = true;
     return new Promise((resolve) =>
-      this.socket.once("close", () => resolve()).end("END\r\n")
+      this.socket
+        .once("close", () => {
+          this.socket.removeAllListeners();
+          resolve();
+        })
+        .end("END\r\n")
     );
   }
 }

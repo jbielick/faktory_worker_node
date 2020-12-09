@@ -24,22 +24,6 @@ test("#open: resolves with the server greeting", async (t) => {
   });
 });
 
-test("#close: connects after disconnect", async (t) => {
-  await mocked(async (server, port) => {
-    let acc = "";
-    server.on("connection", () => (acc += "Co"));
-    const conn = new Connection(port);
-    conn.on("close", () => (acc += "Cl"));
-    await conn.open();
-    await conn.close();
-    await conn.open();
-    await conn.close();
-    await conn.open();
-    await conn.close();
-    t.is(acc, "CoClCoClCoCl");
-  });
-});
-
 test("#close: emits close", async (t) => {
   await mocked(async (_, port) => {
     const conn = new Connection(port);
@@ -64,7 +48,7 @@ test.cb("#open: emits connect", (t) => {
 test("#open: rejects when connection fails", async (t) => {
   const port = 1001;
   const conn = new Connection(port);
-  conn.on("error", () => {});
+  conn.on("error", () => { });
   await t.throwsAsync(conn.open(), { message: /ECONNREFUSED/ });
 });
 
@@ -77,7 +61,7 @@ test.cb("#open: emits error when connection fails to connect", (t) => {
   });
   conn
     .open()
-    .catch(() => {})
+    .catch(() => { })
     .then();
 });
 
