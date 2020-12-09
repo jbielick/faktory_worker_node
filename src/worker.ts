@@ -203,7 +203,16 @@ export class Worker extends EventEmitter {
     if (!this.listenerCount("error")) this.on("error", this.onerror);
     this.execute = this.createExecutor();
     await this.beat();
-    this.heartbeat = setInterval(() => this.beat(), this.beatInterval);
+    this.heartbeat = setInterval(async () => {
+      try {
+        await this.beat();
+      } catch (error) {
+        this.emit(
+          "error",
+          new Error(`Couldn't send heartbeat to the server: ${error.stack}`)
+        );
+      }
+    }, this.beatInterval);
     this.trapSignals();
 
     for (let index = 0; index < this.concurrency; index += 1) {
