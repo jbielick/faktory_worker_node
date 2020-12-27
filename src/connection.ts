@@ -221,9 +221,9 @@ export class Connection extends EventEmitter {
    * Closes the connection to the server
    * @return {Promise} resolved when underlying socket emits "close"
    */
-  close(): Promise<undefined> {
+  close(): Promise<void> {
     this.closing = true;
-    return new Promise((resolve) =>
+    return new Promise<void>((resolve) =>
       this.socket
         .once("close", () => {
           this.socket.removeAllListeners();

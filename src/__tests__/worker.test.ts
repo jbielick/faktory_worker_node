@@ -66,7 +66,7 @@ test("hearbeats", async (t) => {
     let worker: Worker;
     let called = 0;
 
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       server
         .on("BEAT", ({ socket }) => {
           called += 1;

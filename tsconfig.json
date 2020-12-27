@@ -1,16 +1,19 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
-    "declaration": true,
-    "rootDir": "./src",
-    "outDir": "./lib",
-    "lib": ["ES2016"],
-    "moduleResolution": "node",
+    "module": "commonjs",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "module": "CommonJS",
-    "target": "ES2016",
+    "target": "es6",
     "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "lib",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["node_modules/*", "src/types/*"]
+    },
+    "declaration": true,
     "strictNullChecks": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,

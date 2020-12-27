@@ -87,7 +87,7 @@ test("worker drains pool after stop timeout", async (t) => {
     process.exit = originalExit;
   };
 
-  await new Promise(async (resolve) => {
+  await new Promise<void>(async (resolve) => {
     const worker = create({
       queues: [queue],
       timeout: 0.05,
@@ -112,7 +112,7 @@ test.serial("SIGTERM stops the worker", async (t) => {
   await worker.work();
 
   const originalStop = worker.stop.bind(worker);
-  const promise = new Promise((resolve) => {
+  const promise = new Promise<void>((resolve) => {
     worker.stop = async () => {
       t.pass();
       originalStop();
@@ -132,7 +132,7 @@ test.serial("SIGINT stops the worker", async (t) => {
   await worker.work();
 
   const originalStop = worker.stop.bind(worker);
-  const promise = new Promise((resolve) => {
+  const promise = new Promise<void>((resolve) => {
     worker.stop = async () => {
       t.pass();
       originalStop();
@@ -152,7 +152,7 @@ test.serial("SIGTSTP quiets the worker", async (t) => {
   await worker.work();
 
   const originalQuiet = worker.quiet.bind(worker);
-  const promise = new Promise((resolve) => {
+  const promise = new Promise<void>((resolve) => {
     worker.quiet = () => {
       t.pass();
       originalQuiet();
@@ -173,7 +173,7 @@ test("quiets when the heartbeat response says so", async (t) => {
     const worker = create({ port });
 
     const originalQuiet = worker.quiet.bind(worker);
-    const promise = new Promise((resolve) => {
+    const promise = new Promise<void>((resolve) => {
       worker.quiet = () => {
         t.pass();
         worker.quiet = originalQuiet;
@@ -195,7 +195,7 @@ test("stops when the heartbeat response says terminate", async (t) => {
     const worker = create({ port });
 
     const originalStop = worker.stop.bind(worker);
-    const promise = new Promise((resolve) => {
+    const promise = new Promise<void>((resolve) => {
       worker.stop = async () => {
         t.pass();
         originalStop();

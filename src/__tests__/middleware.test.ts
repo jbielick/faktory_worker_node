@@ -8,7 +8,7 @@ registerCleaner(test);
 test("invokes middleware", async (t) => {
   const { queue, jobtype } = await push();
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const worker = new Worker({
       concurrency: 1,
       queues: [queue],
@@ -50,7 +50,7 @@ test("invokes middleware in order", async (t) => {
     ],
   });
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     worker.register(jobtype, async () => {
       recorder.push("run 1");
       await sleep(1);
@@ -71,7 +71,7 @@ test("invokes middleware in order", async (t) => {
 
 test(".use() adds middleware to the stack", (t) => {
   const worker = new Worker();
-  const mmw = () => {};
+  const mmw = () => { };
 
   worker.use(mmw);
 
@@ -99,7 +99,7 @@ test("middleware context is passed to job thunk", async (t) => {
     return next();
   });
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     worker.register(jobtype, (...args) => ({ memo }: { memo: string[] }) => {
       t.deepEqual(args, [1], "args not correct");
       t.deepEqual(memo, ["hello", "world"]);

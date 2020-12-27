@@ -15,7 +15,7 @@ test("passes args to jobfn", async (t) => {
   const args = [1, 2, "three"];
   const { queue, jobtype } = await push({ args });
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
@@ -34,7 +34,7 @@ test("awaits async jobfns", async (t) => {
   const args = [1, 2, "three"];
   const { queue, jobtype } = await push({ args });
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
@@ -54,7 +54,7 @@ test("handles sync jobfn and sync thunk", async (t) => {
   const args = [1, 2, "three"];
   const { queue, jobtype, jid } = await push({ args });
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
@@ -74,7 +74,7 @@ test("handles sync jobfn and async (thunk)", async (t) => {
   const args = [1, 2, "three"];
   const { queue, jobtype, jid } = await push({ args });
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
@@ -96,7 +96,7 @@ test("handles async jobfn and sync thunk", async (t) => {
   const { queue, jobtype, jid } = await push({ args });
   const worker = create({ queues: [queue] });
 
-  await new Promise(async (resolve) => {
+  await new Promise<void>(async (resolve) => {
     worker.register(
       jobtype,
       async (...args) => ({ job }: MiddlewareContext) => {
@@ -115,7 +115,7 @@ test("handles async jobfn and async thunk", async (t) => {
   const args = [1, 2, "three"];
   const { queue, jobtype, jid } = await push({ args });
 
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
@@ -137,7 +137,7 @@ test(".handle() FAILs and throws when no job is registered", async (t) => {
   await mocked(async (server, port) => {
     let worker: Worker;
 
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       server
         .on("BEAT", mocked.beat())
         .on("FETCH", mocked.fetch(job))
@@ -160,7 +160,7 @@ test(".handle() FAILs and throws when the job throws (sync) during execution", a
   await mocked(async (server, port) => {
     let worker: Worker;
 
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       server
         .on("BEAT", mocked.beat())
         .on("FETCH", mocked.fetch(job))
@@ -192,7 +192,7 @@ test(".handle() FAILs and throws when the job rejects (async) during execution",
   await mocked(async (server, port) => {
     let worker: Worker;
 
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       server
         .on("BEAT", mocked.beat())
         .on("FETCH", mocked.fetch(job))
@@ -224,7 +224,7 @@ test(".handle() FAILs when the job returns a rejected promise with no error", as
   await mocked(async (server, port) => {
     let worker: Worker;
 
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       server
         .on("BEAT", mocked.beat())
         .on("FETCH", mocked.fetch(job))

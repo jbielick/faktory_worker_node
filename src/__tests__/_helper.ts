@@ -48,7 +48,7 @@ export const mocked = async (fn: ServerUser): Promise<unknown> => {
   try {
     return fn(server, port);
   } finally {
-    await new Promise((resolve) => server.close(() => resolve()));
+    await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 };
 

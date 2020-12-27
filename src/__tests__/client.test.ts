@@ -315,3 +315,7 @@ test("#job: push resolves with the jid", async (t) => {
     t.truthy(/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/.test(jid));
   });
 });
+
+test.skip('shutdown: shutsdown before timeout', async (t) => {
+
+});
