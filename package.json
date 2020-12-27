@@ -9,7 +9,7 @@
   "license": "MIT",
   "scripts": {
     "watch": "npm run build -- -w",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc && cp -R src/@types lib/@types",
     "clean": "rm -rf lib/*",
     "test": "npm run build && npm run test:unit",
     "test:unit": "nyc --cache ava src/__tests__/**/*",
