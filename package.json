@@ -1,6 +1,6 @@
 {
   "name": "faktory-worker",
-  "version": "4.1.1",
+  "version": "4.1.2",
   "description": "A faktory worker framework for node apps",
   "type": "commonjs",
   "main": "./lib/faktory.js",
