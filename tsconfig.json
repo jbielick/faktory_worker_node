@@ -3,20 +3,18 @@
   "compilerOptions": {
     "module": "commonjs",
     "esModuleInterop": true,
+    "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
     "allowSyntheticDefaultImports": true,
-    "target": "es6",
+    "target": "es2019",
+    "skipLibCheck": true,
     "noImplicitAny": true,
     "moduleResolution": "node",
-    "sourceMap": true,
     "outDir": "lib",
-    "baseUrl": ".",
-    "paths": {
-      "*": ["node_modules/*", "src/@types/*"]
-    },
     "declaration": true,
     "strictNullChecks": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
     "noImplicitThis": true
   },
   "include": ["src/**/*"]

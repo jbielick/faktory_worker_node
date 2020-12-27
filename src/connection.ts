@@ -5,6 +5,19 @@ import makeDebug from "debug";
 
 import RedisParser from "redis-parser";
 
+declare module "redis-parser" {
+  type Config = {
+    returnReply: (response: string) => void;
+    returnError: (error: Error) => void;
+  };
+
+  class RedisParser {
+    // eslint-disable-next-line  @typescript-eslint/explicit-module-boundary-types
+    constructor(config: Config);
+    execute(buffer: Buffer): (err: Error | null, response: string) => void;
+  }
+}
+
 const debug = makeDebug("faktory-worker:connection");
 
 const SOCKET_TIMEOUT = 10000;
@@ -58,7 +71,7 @@ export class Connection extends EventEmitter {
   port: string | number;
   pending: PendingRequest[];
   socket: Socket;
-  parser: RedisParser;
+  parser: RedisParser.RedisParser;
   lastError: Error;
 
   /**
