@@ -79,7 +79,7 @@
   "dependencies": {
     "commander": "2.20.0",
     "debug": "^4.1.0",
-    "generic-pool": "3.7.1",
+    "generic-pool": "3.7.2",
     "koa-compose": "^4.1.0",
     "redis-parser": "^3.0.0",
     "uuid": "8.3.2"
