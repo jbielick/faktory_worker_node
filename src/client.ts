@@ -243,7 +243,7 @@ export class Client {
       }
       return response;
     } catch(error) {
-      return error;
+      return error.message;
     }
   }
 
