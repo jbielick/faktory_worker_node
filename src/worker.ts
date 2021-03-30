@@ -211,6 +211,7 @@ export class Worker extends EventEmitter {
           "error",
           new Error(`Couldn't send heartbeat to the server: ${error.stack}`)
         );
+        this.stop();
       }
     }, this.beatInterval);
     this.trapSignals();

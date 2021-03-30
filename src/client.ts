@@ -236,15 +236,11 @@ export class Client {
    */
   async beat(): Promise<string> {
     heartDebug("BEAT");
-    try {
-      const response = await this.send(["BEAT", encode({ wid: this.wid })]);
-      if (response[0] === "{") {
-        return JSON.parse(response).state;
-      }
-      return response;
-    } catch(error) {
-      return error.message;
+    const response = await this.send(["BEAT", encode({ wid: this.wid })]);
+    if (response[0] === "{") {
+      return JSON.parse(response).state;
     }
+    return response;
   }
 
   /**

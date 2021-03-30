@@ -156,16 +156,13 @@ test("#beat: returns a signal from the server", async (t) => {
   });
 });
 
-test("#beat: returns unknown worker err", async (t) => {
+test("#beat err: throws unknown worker err", async (t) => {
   await mocked(async (server, port) => {
-
     const message = "Unknown worker";
     server.on("BEAT", mocked.beatErr(message));
 
     const client = new Client({ port });
-    const err = await client.beat();
-    t.is(err, `ERR ${message}`);
-
+    await t.throwsAsync(client.beat(), { message: `ERR ${message}` });
   });
 });
 
