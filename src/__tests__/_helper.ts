@@ -66,6 +66,15 @@ mocked.beat = (state?: string) => ({ socket }: ServerControl) => {
     socket.write(`$${json.length}\r\n${json}\r\n`);
   }
 };
+
+mocked.beatErr = (errString?: string) => ({ socket }: ServerControl) => {
+  if (!errString) {
+    socket.write("-ERR \r\n");
+  } else {
+    socket.write(`-ERR ${errString}\r\n`);
+  }
+};
+
 mocked.fetch = (job: JobPayload | null) => ({ socket }: ServerControl) => {
   if (job) {
     const string = JSON.stringify(job);

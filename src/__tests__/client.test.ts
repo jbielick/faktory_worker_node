@@ -156,6 +156,16 @@ test("#beat: returns a signal from the server", async (t) => {
   });
 });
 
+test("#beat err: throws unknown worker err", async (t) => {
+  await mocked(async (server, port) => {
+    const message = "Unknown worker";
+    server.on("BEAT", mocked.beatErr(message));
+
+    const client = new Client({ port });
+    await t.throwsAsync(client.beat(), { message: `ERR ${message}` });
+  });
+});
+
 test.skip("#connect: rejects connect when connection cannot be established", async (t) => {
   const client = new Client({ url: "tcp://localhost:7488" });
 
