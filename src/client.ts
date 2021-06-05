@@ -2,14 +2,13 @@ import { default as makeDebug } from "debug";
 import { URL } from "url";
 import { unescape } from "querystring";
 import { hostname } from "os";
-import { createPool } from "generic-pool";
+import { createPool, Pool } from "generic-pool";
 
 import { encode, hash } from "./utils";
 import { Job, JobPayload, JobType } from "./job";
 import { Mutation, RETRIES, DEAD, SCHEDULED } from "./mutation";
 import { Connection, Greeting, Command } from "./connection";
 import { ConnectionFactory } from "./connection-factory";
-import { Pool } from "generic-pool";
 
 const debug = makeDebug("faktory-worker:client");
 const heartDebug = makeDebug("faktory-worker:client:heart");

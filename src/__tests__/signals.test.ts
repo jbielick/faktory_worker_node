@@ -76,7 +76,7 @@ test(".stop() allows in-progress jobs to finish", async (t) => {
   await stop();
 });
 
-test("worker drains pool after stop timeout", async (t) => {
+test("worker exits the process after stop timeout", async (t) => {
   const { queue, jobtype } = await push();
   let exited = false;
 
@@ -94,7 +94,7 @@ test("worker drains pool after stop timeout", async (t) => {
       registry: {
         [jobtype]: async () => {
           worker.stop();
-          await sleep(100);
+          await sleep(1000);
           t.truthy(exited);
           resolve();
         },

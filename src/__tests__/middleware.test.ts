@@ -25,7 +25,6 @@ test("invokes middleware", async (t) => {
         },
       },
     });
-
     worker.work();
   });
 });

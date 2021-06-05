@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
-const faktory = require('../');
+const faktory = require("../");
 const concurrency = Number(process.argv[2]);
 
 (async () => {
-
   let completed = 0;
   const time = process.hrtime();
   let worker;
@@ -25,11 +24,10 @@ jobs/s: ${Math.round(completed / duration, 2)}
     }
   };
 
-  faktory.register('MyJob', async () => {
+  faktory.register("MyJob", async () => {
     // await new Promise(resolve => setTimeout(resolve, 0));
     finish();
   });
 
   worker = await faktory.work({ concurrency });
-
 })();

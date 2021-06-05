@@ -95,7 +95,7 @@ export class Connection extends EventEmitter {
    */
   private listen(): Connection {
     this.socket
-      .on("connect", this.onConnect.bind(this))
+      .once("connect", this.onConnect.bind(this))
       .on("data", this.parser.execute.bind(this.parser))
       .on("timeout", this.onTimeout.bind(this))
       .on("error", this.onError.bind(this))
@@ -215,13 +215,15 @@ export class Connection extends EventEmitter {
   private onError(err: Error) {
     this.lastError = err;
     this.emit("error", err);
+    this.close();
   }
 
   /**
    * Closes the connection to the server
    * @return {Promise} resolved when underlying socket emits "close"
    */
-  close(): Promise<void> {
+  async close(): Promise<void> {
+    if (this.closing) return;
     this.closing = true;
     return new Promise<void>((resolve) =>
       this.socket

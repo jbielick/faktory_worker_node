@@ -156,8 +156,8 @@ test("#beat: returns a signal from the server", async (t) => {
   });
 });
 
-test.skip("#connect: rejects connect when connection cannot be established", async (t) => {
-  const client = new Client({ url: "tcp://localhost:7488" });
+test("#connect: rejects connect when connection cannot be established", async (t) => {
+  const client = new Client({ url: "tcp://localhost:1" });
 
   await t.throwsAsync(client.connect(), { message: /ECONNREFUSED/ });
 });
