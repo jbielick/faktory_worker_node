@@ -11,3 +11,5 @@ bench
 CODE_OF_CONDUCT.md
 ISSUE_TEMPLATE.md
 .nyc_output
+package-lock.json
+yarn.lock
