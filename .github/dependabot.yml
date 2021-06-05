@@ -1,0 +1,51 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "10:00"
+  open-pull-requests-limit: 10
+  reviewers:
+  - jbielick
+  assignees:
+  - jbielick
+  ignore:
+  - dependency-name: eslint-config-prettier
+    versions:
+    - 8.0.0
+    - 8.1.0
+    - 8.2.0
+  - dependency-name: "@typescript-eslint/parser"
+    versions:
+    - 4.14.0
+    - 4.14.1
+    - 4.14.2
+    - 4.15.0
+    - 4.15.1
+    - 4.15.2
+    - 4.16.1
+    - 4.17.0
+    - 4.18.0
+    - 4.19.0
+    - 4.20.0
+  - dependency-name: commander
+    versions:
+    - 7.0.0
+    - 7.1.0
+    - 7.2.0
+  - dependency-name: typescript
+    versions:
+    - 4.1.5
+    - 4.2.2
+    - 4.2.3
+  - dependency-name: generic-pool
+    versions:
+    - 3.7.2
+  - dependency-name: jsdoc-to-markdown
+    versions:
+    - 6.0.1
+    - 7.0.0
+  - dependency-name: sinon
+    versions:
+    - 9.2.4
