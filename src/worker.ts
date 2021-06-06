@@ -11,7 +11,6 @@ import { sleep } from "./utils";
 import createExecutionChain from "./create-execution-chain";
 
 const debug = makeDebug("faktory-worker:worker");
-const START_DELAY = process.env.NODE_ENV === "test" ? 0 : 5;
 
 /**
  * A lookup table holding the jobtype constants mapped to their job functions
@@ -265,7 +264,7 @@ export class Worker extends EventEmitter {
         } catch (e) {
           console.warn("error during graceful shutdown:", e);
         }
-      })
+      });
     });
   }
 

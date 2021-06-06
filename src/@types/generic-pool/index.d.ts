@@ -1,7 +1,7 @@
-import { EventEmitter } from "koa";
+import "generic-pool";
 
 declare module "generic-pool" {
-  export interface Pool<T> {
+  export interface Pool {
     ready(): PromiseLike<void>;
   }
 }
