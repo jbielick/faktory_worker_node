@@ -14,6 +14,12 @@ jobs:
       matrix:
         node-version: [10.x, 12.x, 14.x, 15.x]
 
+    services:
+      faktory:
+        image: faktory:1.5.1
+        ports:
+          - 7419:7419
+
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.node-version }}
