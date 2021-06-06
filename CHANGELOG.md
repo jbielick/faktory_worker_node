@@ -1,3 +1,9 @@
+## main / unreleased | 2021-06-05
+
+- Refactors concurrency limiting to reduce server chatter for little throughput benefit and reduces the chance of starving the event loop when there are no jobs. 96019a
+- Wraps more server communication in try/catch to avoid unhandled rejections in unexpected situations. 96019a
+- upgrades generic-pool
+
 ## 4.0.0 | 2020-08-10
 
 - Migrates the project to TypeScript
