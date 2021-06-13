@@ -12,6 +12,8 @@ import { ConnectionFactory } from "./connection-factory";
 
 const debug = makeDebug("faktory-worker:client");
 const heartDebug = makeDebug("faktory-worker:client:heart");
+// set this namespace to log via console.log (goes to stdout)
+heartDebug.log = console.log.bind(console); 
 
 const FAKTORY_PROTOCOL_VERSION = 2;
 const FAKTORY_PROVIDER = process.env.FAKTORY_PROVIDER || "FAKTORY_URL";
