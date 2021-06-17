@@ -10,7 +10,7 @@ registerCleaner(test);
 test("#register: returns self", (t) => {
   const faktory = create();
 
-  const returned = faktory.register("test", () => {});
+  const returned = faktory.register("test", () => { });
 
   t.is(faktory, returned, "`this` not returned by .register");
 });
@@ -18,7 +18,7 @@ test("#register: returns self", (t) => {
 test("#use: returns self", (t) => {
   const faktory = create();
 
-  const returned = faktory.use(() => {});
+  const returned = faktory.use(() => { });
 
   t.is(faktory, returned, "`this` not returned by .use");
 });
@@ -44,7 +44,7 @@ test("#work: throws when called twice", (t) => {
 
 test(".registry returns the registry object", (t) => {
   const faktory = create();
-  const myFunc = () => {};
+  const myFunc = () => { };
 
   faktory.register("MyJob", myFunc);
 
@@ -57,6 +57,16 @@ test(".connect() resolves a client", async (t) => {
   const client = await faktory.connect();
 
   t.truthy(client instanceof Client);
+});
+
+test('.work() resolves the worker after starting', async (t) => {
+  const faktory = create();
+
+  const worker = await faktory.work();
+
+  worker.on('test', () => { });
+
+  t.is(worker.listenerCount('test'), 1);
 });
 
 test(".work() creates a worker, runs, then resolves the worker", async (t) => {
