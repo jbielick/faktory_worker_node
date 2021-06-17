@@ -391,7 +391,7 @@ export class Worker extends EventEmitter {
     return this;
   }
 
-  onerror(error: Error) {
+  onerror(error: Error): void {
     console.error(error);
   }
 
