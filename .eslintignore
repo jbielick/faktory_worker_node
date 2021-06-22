@@ -1,2 +1,3 @@
 *.test.ts
 lib
+_helper.ts
