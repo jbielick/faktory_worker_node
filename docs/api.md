@@ -194,17 +194,17 @@ connection terminations. Use this object for all interactions with the factory s
 
 * [Client](#Client)
     * [new Client([options])](#new_Client_new)
-    * [.connect()](#Client+connect) ⇒ [<code>Promise.&lt;Client&gt;</code>](#Client)
-    * [.close()](#Client+close) ⇒ <code>Promise.&lt;undefined&gt;</code>
+    * [.connect()](#Client+connect) ⇒ [<code>[ &#x27;Promise&#x27; ].&lt;Client&gt;</code>](#Client)
+    * [.close()](#Client+close) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;undefined&gt;</code>
     * [.job(jobtype, ...args)](#Client+job) ⇒ [<code>Job</code>](#Job)
     * [.send(...args)](#Client+send)
-    * [.fetch(...queues)](#Client+fetch) ⇒ <code>Promise.&lt;(object\|null)&gt;</code>
-    * [.beat()](#Client+beat) ⇒ <code>Promise.&lt;string&gt;</code>
-    * [.push(job)](#Client+push) ⇒ <code>Promise.&lt;string&gt;</code>
-    * [.flush()](#Client+flush) ⇒ <code>Promise.&lt;string&gt;</code>
-    * [.info()](#Client+info) ⇒ <code>Promise.&lt;object&gt;</code>
-    * [.ack(jid)](#Client+ack) ⇒ <code>Promise.&lt;string&gt;</code>
-    * [.fail(jid, e)](#Client+fail) ⇒ <code>Promise.&lt;string&gt;</code>
+    * [.fetch(...queues)](#Client+fetch) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;(object\|null)&gt;</code>
+    * [.beat()](#Client+beat) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
+    * [.push(job)](#Client+push) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
+    * [.flush()](#Client+flush) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
+    * [.info()](#Client+info) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;object&gt;</code>
+    * [.ack(jid)](#Client+ack) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
+    * [.fail(jid, e)](#Client+fail) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
 
 <a name="new_Client_new"></a>
 
@@ -220,7 +220,7 @@ Creates a Client with a connection pool
 | [options.port] | <code>number</code> \| <code>string</code> | <code>7419</code> | port to connect to faktory server on |
 | [options.password] | <code>string</code> |  | faktory server password to use during HELLO |
 | [options.wid] | <code>string</code> |  | optional wid that should be provided to the server                               (only necessary for a worker process consuming jobs) |
-| [options.labels] | <code>Array.&lt;string&gt;</code> | <code>[]</code> | optional labels to provide the faktory server                                       for this client |
+| [options.labels] | <code>[ &#x27;Array&#x27; ].&lt;string&gt;</code> | <code>[]</code> | optional labels to provide the faktory server                                       for this client |
 | [options.poolSize] | <code>number</code> | <code>10</code> | the maxmimum size of the connection pool |
 
 **Example**  
@@ -231,7 +231,7 @@ const job = await client.fetch('default');
 ```
 <a name="Client+connect"></a>
 
-### client.connect() ⇒ [<code>Promise.&lt;Client&gt;</code>](#Client)
+### client.connect() ⇒ [<code>[ &#x27;Promise&#x27; ].&lt;Client&gt;</code>](#Client)
 Explicitly opens a connection and then closes it to test connectivity.
 Under normal circumstances you don't need to call this method as all of the
 communication methods will check out a connection before executing. If a connection is
@@ -239,10 +239,10 @@ not available, one will be created. This method exists to ensure connection is p
 if you need to do so. You can think of this like [sqlx#MustConnect](https://godoc.org/github.com/jmoiron/sqlx#MustConnect)
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: [<code>Promise.&lt;Client&gt;</code>](#Client) - resolves when a connection is opened  
+**Returns**: [<code>[ &#x27;Promise&#x27; ].&lt;Client&gt;</code>](#Client) - resolves when a connection is opened  
 <a name="Client+close"></a>
 
-### client.close() ⇒ <code>Promise.&lt;undefined&gt;</code>
+### client.close() ⇒ <code>[ &#x27;Promise&#x27; ].&lt;undefined&gt;</code>
 Closes the connection to the server
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
@@ -276,11 +276,11 @@ the promise returned by the wrapped function is resolved or rejected.
 
 <a name="Client+fetch"></a>
 
-### client.fetch(...queues) ⇒ <code>Promise.&lt;(object\|null)&gt;</code>
+### client.fetch(...queues) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;(object\|null)&gt;</code>
 Fetches a job payload from the server from one of ...queues
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>Promise.&lt;(object\|null)&gt;</code> - a job payload if one is available, otherwise null  
+**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;(object\|null)&gt;</code> - a job payload if one is available, otherwise null  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -288,20 +288,20 @@ Fetches a job payload from the server from one of ...queues
 
 <a name="Client+beat"></a>
 
-### client.beat() ⇒ <code>Promise.&lt;string&gt;</code>
+### client.beat() ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
 Sends a heartbeat for this.wid to the server
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>Promise.&lt;string&gt;</code> - string 'OK' when the heartbeat is accepted, otherwise
+**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code> - string 'OK' when the heartbeat is accepted, otherwise
                           may return a state string when the server has a signal
                           to send this client (`quiet`, `terminate`)  
 <a name="Client+push"></a>
 
-### client.push(job) ⇒ <code>Promise.&lt;string&gt;</code>
+### client.push(job) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
 Pushes a job payload to the server
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>Promise.&lt;string&gt;</code> - the jid for the pushed job  
+**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code> - the jid for the pushed job  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -309,25 +309,25 @@ Pushes a job payload to the server
 
 <a name="Client+flush"></a>
 
-### client.flush() ⇒ <code>Promise.&lt;string&gt;</code>
+### client.flush() ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
 Sends a FLUSH to the server
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>Promise.&lt;string&gt;</code> - resolves with the server's response text  
+**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code> - resolves with the server's response text  
 <a name="Client+info"></a>
 
-### client.info() ⇒ <code>Promise.&lt;object&gt;</code>
+### client.info() ⇒ <code>[ &#x27;Promise&#x27; ].&lt;object&gt;</code>
 Sends an INFO command to the server
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>Promise.&lt;object&gt;</code> - the server's INFO response object  
+**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;object&gt;</code> - the server's INFO response object  
 <a name="Client+ack"></a>
 
-### client.ack(jid) ⇒ <code>Promise.&lt;string&gt;</code>
+### client.ack(jid) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
 Sends an ACK to the server for a particular job ID
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>Promise.&lt;string&gt;</code> - the server's response text  
+**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code> - the server's response text  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -335,11 +335,11 @@ Sends an ACK to the server for a particular job ID
 
 <a name="Client+fail"></a>
 
-### client.fail(jid, e) ⇒ <code>Promise.&lt;string&gt;</code>
+### client.fail(jid, e) ⇒ <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code>
 Sends a FAIL command to the server for a particular job ID with error information
 
 **Kind**: instance method of [<code>Client</code>](#Client)  
-**Returns**: <code>Promise.&lt;string&gt;</code> - the server's response text  
+**Returns**: <code>[ &#x27;Promise&#x27; ].&lt;string&gt;</code> - the server's response text  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -640,6 +640,7 @@ started per-process.
 
 * [Worker](#Worker)
     * [new Worker([options])](#new_Worker_new)
+    * [.inProgress](#Worker+inProgress)
     * [.work()](#Worker+work) ⇒
     * [.quiet()](#Worker+quiet)
     * [.stop()](#Worker+stop) ⇒ <code>promise</code>
@@ -658,8 +659,8 @@ started per-process.
 | [options.concurrency] | <code>Number</code> | <code>20</code> | how many jobs this worker can process at once |
 | [options.shutdownTimeout] | <code>Number</code> | <code>8</code> | the amount of time in seconds that the worker                                             may take to finish a job before exiting                                             ungracefully |
 | [options.beatInterval] | <code>Number</code> | <code>15</code> | the amount of time in seconds between each                                             heartbeat |
-| [options.queues] | <code>Array.&lt;string&gt;</code> | <code>[&#x27;default&#x27;]</code> | the queues this worker will fetch jobs from |
-| [options.middleware] | <code>Array.&lt;function()&gt;</code> | <code>[]</code> | a set of middleware to run before performing                                               each job                                       in koa.js-style middleware execution signature |
+| [options.queues] | <code>[ &#x27;Array&#x27; ].&lt;string&gt;</code> | <code>[&#x27;default&#x27;]</code> | the queues this worker will fetch jobs from |
+| [options.middleware] | <code>[ &#x27;Array&#x27; ].&lt;function()&gt;</code> | <code>[]</code> | a set of middleware to run before performing                                               each job                                       in koa.js-style middleware execution signature |
 | [options.registry] | <code>Registry</code> | <code>Registry</code> | the job registry to use when working |
 | [options.poolSize] | <code>Number</code> | <code>concurrency+2</code> | the client connection pool size for                                                  this worker |
 
@@ -671,6 +672,13 @@ const worker = new Worker({
 
 worker.work();
 ```
+<a name="Worker+inProgress"></a>
+
+### worker.inProgress
+Returns an array of promises, each of which is a processor promise
+doing work or waiting on fetch.
+
+**Kind**: instance property of [<code>Worker</code>](#Worker)  
 <a name="Worker+work"></a>
 
 ### worker.work() ⇒
@@ -781,6 +789,6 @@ The client's response to the server's [HI](HI) to initiate a connection
 | hostname | <code>string</code> | name of the host that is running this worker |
 | wid | <code>string</code> | globally unique identifier for this worker |
 | pid | <code>number</code> | local process identifier for this worker on its host |
-| labels | <code>Array.&lt;string&gt;</code> | labels that apply to this worker, to allow producers to target work                             units to worker types. |
+| labels | <code>[ &#x27;Array&#x27; ].&lt;string&gt;</code> | labels that apply to this worker, to allow producers to target work                             units to worker types. |
 | pwdhash | <code>string</code> | This field should be the hexadecimal representation of the ith                            SHA256 hash of the client password concatenated with the value in s. |
 
