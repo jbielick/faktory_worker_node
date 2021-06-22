@@ -212,7 +212,7 @@ export function create(): FaktoryControl {
     },
 
     /**
-     * Starts a worker. Doesn't resolve until the worker is shut down. Only call this
+     * Starts a worker. Resolves after the worker is started. Only call this
      * once per-process.
      *
      * @param  {object} options options to {@link Worker}
