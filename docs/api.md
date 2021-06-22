@@ -154,7 +154,7 @@ await client.push(job);
 <a name="module_faktory+work"></a>
 
 ### faktory.work(options) ⇒ <code>Promise</code>
-Starts a worker. Doesn't resolve until the worker is shut down. Only call this
+Starts a worker. Resolves after the worker is started. Only call this
 once per-process.
 
 **Kind**: instance method of [<code>faktory</code>](#module_faktory)  
@@ -640,7 +640,6 @@ started per-process.
 
 * [Worker](#Worker)
     * [new Worker([options])](#new_Worker_new)
-    * [.inProgress](#Worker+inProgress)
     * [.work()](#Worker+work) ⇒
     * [.quiet()](#Worker+quiet)
     * [.stop()](#Worker+stop) ⇒ <code>promise</code>
@@ -672,13 +671,6 @@ const worker = new Worker({
 
 worker.work();
 ```
-<a name="Worker+inProgress"></a>
-
-### worker.inProgress
-Returns an array of promises, each of which is a processor promise
-doing work or waiting on fetch.
-
-**Kind**: instance property of [<code>Worker</code>](#Worker)  
 <a name="Worker+work"></a>
 
 ### worker.work() ⇒
