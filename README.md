@@ -9,7 +9,7 @@
 
 A node.js client and worker library for the [Faktory](https://github.com/contribsys/faktory) job server. The client allows you to push jobs and communicate with the Faktory server and the worker fetches background jobs from the Faktory server and processes them.
 
-Faktory server compatibility: `~v1.4`
+Faktory server compatibility: `~v1.5.1`
 
 ## Installation
 
@@ -32,7 +32,7 @@ const faktory = require("faktory-worker");
 (async () => {
   const client = await faktory.connect();
   await client.job("ResizeImage", { id: 333, size: "thumb" }).push();
-  await client.close(); // remember to disconnect!
+  await client.close(); // reuse client if possible! remember to disconnect!
 })().catch((e) => console.error(e));
 ```
 
@@ -48,7 +48,10 @@ faktory.register("ResizeImage", async ({ id, size }) => {
   await image.resize(size);
 });
 
-faktory.work();
+faktory.work().catch(error => {
+  console.error(`worker failed to start: ${error}`);
+  process.exit(1);
+});
 ```
 
 A job function can be a sync or async function. Simply return a promise or use `await` in your async function to perform async tasks during your job. If you return early or don't `await` properly, the job will be `ACK`ed when the function returns.
@@ -65,7 +68,7 @@ An `error` event is emitted when an unexpected error occurs in the this library.
 const worker = await faktory.work();
 
 worker.on("fail", ({ job, error }) => {
-  // do something with error
+  // report job error somewhere
 });
 ```
 
