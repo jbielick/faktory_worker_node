@@ -64,7 +64,7 @@
     "@typescript-eslint/parser": "4.26.1",
     "ava": "3.15.0",
     "coveralls": "3.1.0",
-    "eslint": "7.28.0",
+    "eslint": "7.29.0",
     "eslint-config-prettier": "7.2.0",
     "eslint-plugin-import": "2.23.4",
     "eslint-plugin-prettier": "3.4.0",
