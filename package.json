@@ -1,6 +1,6 @@
 {
   "name": "faktory-worker",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "description": "A faktory worker framework for node apps",
   "type": "commonjs",
   "main": "./lib/faktory.js",
@@ -61,7 +61,7 @@
     "@types/node": "^15.6.1",
     "@types/uuid": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^4.0.0",
-    "@typescript-eslint/parser": "4.26.1",
+    "@typescript-eslint/parser": "4.28.3",
     "ava": "3.15.0",
     "coveralls": "3.1.0",
     "eslint": "7.28.0",
