@@ -295,7 +295,7 @@ export class Client {
         "FAIL",
         encode({
           message: e.message,
-          errtype: (e as NodeJS.ErrnoException).code,
+          errtype: `${(e as NodeJS.ErrnoException).code}`,
           backtrace: (e.stack || "").split("\n").slice(0, 100),
           jid,
         }),

@@ -262,6 +262,28 @@ test("#fail: FAILs a job without a stack", async (t) => {
   t.is(await client.fail(fetched.jid, error), "OK");
 });
 
+test("#fail: FAILs a job with a non-string error code", async (t) => {
+  const client = new Client();
+  const job = client.job("test");
+  await job.push();
+
+  const fetched = await client.fetch(job.queue);
+  if (!fetched) return t.fail("job not fetched");
+
+  class CustomError extends Error {
+    public readonly code;
+
+    constructor(code: number, message: string) {
+      super(message);
+      this.code = code;
+    }
+  }
+
+  const error = new CustomError(1234 ,"ETOOMANYDIGITS");
+
+  t.is(await client.fail(fetched.jid, error), "OK");
+});
+
 test("#job: returns a job builder", (t) => {
   const client = new Client();
   const job = client.job("MyTestJob");
