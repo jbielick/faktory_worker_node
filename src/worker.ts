@@ -247,13 +247,6 @@ export class Worker extends EventEmitter {
         debug("shutdown timeout exceeded");
         forced = true;
         // @TODO fail in progress jobs so they retry faster
-
-        debug("failing in progress");
-        for (const jid of this.working.keys()) {
-          debug(`failed job ${jid}`);
-          await this.client.fail(jid, new Error("Restarting worker"));
-        }
-
         this.client.close();
         resolve();
         process.exit(1);
