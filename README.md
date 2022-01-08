@@ -48,7 +48,7 @@ faktory.register("ResizeImage", async ({ id, size }) => {
   await image.resize(size);
 });
 
-faktory.work().catch(error => {
+faktory.work().catch((error) => {
   console.error(`worker failed to start: ${error}`);
   process.exit(1);
 });
@@ -88,6 +88,21 @@ faktory.work();
 ```
 
 Faktory middleware works just like [`koa`](https://github.com/koajs/koa) middleware. You can register a middleware function (async or sync) with `.use`. Middleware is called for every job that is performed. Always return a promise, `await next()`, or `return next();` to allow execution to continue down the middleware chain.
+
+### Graceful Shutdowns
+
+```js
+const faktory = require("faktory-worker");
+const dbPool = require("your-favorite-db-client");
+
+faktory.work({
+  onShutdown: async () => {
+    await dbPool.close();
+  },
+});
+```
+
+Workers expose an `onShutdown` hook, which can be used to gracefully cleanup (e.g. close database connections) on shutdown of the worker. The function will be called after any in-progress jobs at the time of shutdown finish.
 
 ### CLI
 
