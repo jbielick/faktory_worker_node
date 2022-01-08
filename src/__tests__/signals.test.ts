@@ -76,6 +76,24 @@ test(".stop() allows in-progress jobs to finish", async (t) => {
   await stop();
 });
 
+test(".stop() calls onShutdown hook", async (t) => {
+  let onShutdownCalled = false;
+
+  const worker = create({
+    timeout: 250,
+    onShutdown: async () => {
+      await sleep(100);
+      onShutdownCalled = true;
+    },
+  });
+
+  worker.work();
+
+  await worker.stop();
+
+  t.truthy(onShutdownCalled);
+});
+
 test("worker exits the process after stop timeout", async (t) => {
   const { queue, jobtype } = await push();
   let exited = false;

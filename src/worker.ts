@@ -93,6 +93,21 @@ export interface MiddlewareContext {
 
 export type Middleware = KoaMiddleware<MiddlewareContext>;
 
+/**
+ * A function called on shutdown of the worker process. Allows for gracefully cleaning up
+ * (e.g. closing database connections).
+ *
+ * @typedef OnShutdownFunction
+ * @type {function}
+ * @example
+ * faktory.work({
+ *   onShutdown: async () => {
+ *     await db.close()
+ *   },
+ * })
+ */
+export type OnShutdownFunction = () => void | Promise<void>;
+
 export type WorkerOptions = {
   wid?: string;
   concurrency?: number;
@@ -102,6 +117,7 @@ export type WorkerOptions = {
   middleware?: Middleware[];
   registry?: Registry;
   poolSize?: number;
+  onShutdown?: OnShutdownFunction;
 } & ClientOptions;
 
 /**
@@ -122,6 +138,7 @@ export class Worker extends EventEmitter {
   readonly wid: string;
   private concurrency: number;
   private shutdownTimeout: number;
+  private onShutdown: OnShutdownFunction;
   private beatInterval: number;
   readonly queues: string[];
   readonly middleware: Middleware[];
@@ -139,6 +156,8 @@ export class Worker extends EventEmitter {
    * @param  {Number} [options.shutdownTimeout=8]: the amount of time in seconds that the worker
    *                                             may take to finish a job before exiting
    *                                             ungracefully
+   * @param {OnShutdownFunction} [options.onShutdown=() => Promise.resolve()]: cleanup function
+   *                                             called on shutdown of the worker process
    * @param  {Number} [options.beatInterval=15]: the amount of time in seconds between each
    *                                             heartbeat
    * @param  {string[]} [options.queues=['default']]: the queues this worker will fetch jobs from
@@ -154,6 +173,7 @@ export class Worker extends EventEmitter {
     this.wid = options.wid || uuid().slice(0, 8);
     this.concurrency = options.concurrency || 20;
     this.shutdownTimeout = (options.timeout || 8) * 1000;
+    this.onShutdown = options.onShutdown || (() => Promise.resolve());
     this.beatInterval = (options.beatInterval || 15) * 1000;
     this.queues = options.queues || [];
     if (this.queues.length === 0) {
@@ -258,7 +278,7 @@ export class Worker extends EventEmitter {
           await Promise.all(this.working.values());
           debug("all clear");
           if (forced) return;
-          await this.client.close();
+          await Promise.all([this.client.close(), this.onShutdown()]);
           clearTimeout(timeout);
           resolve();
         } catch (e) {
