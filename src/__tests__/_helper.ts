@@ -1,4 +1,5 @@
-import { TestInterface } from "ava";
+import { TestFn, ExecutionContext } from "ava";
+import { promisify } from 'util'
 import { Socket, createServer, Server } from "net";
 import { v4 as uuid } from "uuid";
 import getPort from "get-port";
@@ -26,7 +27,7 @@ export const mockServer = (): Server => {
       let data = rawData;
       try {
         data = JSON.parse(rawData);
-      } catch (_) {}
+      } catch (_) { }
       server.emit(command, <ServerControl>{ command, data, socket });
       server.emit("*", <ServerControl>{ command, data, socket });
     });
@@ -122,11 +123,16 @@ export const push = async ({
 
 export const flush = (): Promise<string> => new Client().flush();
 
-export function registerCleaner(test: TestInterface): void {
+export function registerCleaner(test: TestFn): void {
   test.beforeEach(async () => {
     await flush();
   });
   test.afterEach.always(async () => {
     await flush();
   });
+}
+
+export const withCallback = (fn: Function) => async (t: ExecutionContext) => {
+  await promisify(fn)(t);
+  t.pass();
 }

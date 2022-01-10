@@ -1,7 +1,7 @@
-import test from "ava";
+import test, { ExecutionContext } from "ava";
 
 import { Connection } from "../connection";
-import { mocked, registerCleaner } from "./_helper";
+import { mocked, registerCleaner, withCallback } from "./_helper";
 
 registerCleaner(test);
 
@@ -34,36 +34,33 @@ test("#close: emits close", async (t) => {
   });
 });
 
-test.cb("#open: emits connect", (t) => {
+test("#open: emits connect", withCallback((t: ExecutionContext, end: (...args: any[]) => void) => {
   mocked((_, port) => {
     const conn = new Connection(port);
-    conn.on("connect", () => {
-      t.pass();
-      t.end();
-    });
+    conn.on("connect", end);
     return conn.open();
   });
-});
+}));
 
-test("#open: rejects when connection fails", async (t) => {
+test("#open: rejects when connection fails", async (t: ExecutionContext) => {
   const port = 1001;
   const conn = new Connection(port);
   conn.on("error", () => { });
   await t.throwsAsync(conn.open(), { message: /ECONNREFUSED/ });
 });
 
-test.cb("#open: emits error when connection fails to connect", (t) => {
+test("#open: emits error when connection fails to connect", withCallback((t: ExecutionContext, end: (...args: any[]) => void) => {
   const port = 1002;
   const conn = new Connection(port);
   conn.on("error", (err: Error) => {
     t.truthy(err);
-    t.end();
+    end();
   });
   conn
     .open()
     .catch(() => { })
     .then();
-});
+}));
 
 test("#send: resolves with server response", async (t) => {
   await mocked(async (_, port) => {

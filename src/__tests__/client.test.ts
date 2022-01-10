@@ -135,6 +135,7 @@ test("#fetch: fetches jobs", async (t) => {
   t.is(fetched.jid, job.jid);
   t.deepEqual(fetched.args, job.args);
   t.is(fetched.jobtype, job.jobtype);
+  return;
 });
 
 test("#beat: sends a heartbeat", async (t) => {
@@ -201,6 +202,7 @@ test("#ack: ACKs a job", async (t) => {
   if (!fetched) return t.fail("job not fetched");
 
   t.is(await client.ack(fetched.jid), "OK");
+  return;
 });
 
 test("#fetch: returns null when queue is empty", async (t) => {
@@ -245,6 +247,7 @@ test("#fail: FAILs a job", async (t) => {
   if (!fetched) return t.fail("job not fetched");
 
   t.is(await client.fail(fetched.jid, new Error("EHANGRY")), "OK");
+  return;
 });
 
 test("#fail: FAILs a job without a stack", async (t) => {
@@ -260,6 +263,7 @@ test("#fail: FAILs a job without a stack", async (t) => {
   delete error.stack;
 
   t.is(await client.fail(fetched.jid, error), "OK");
+  return;
 });
 
 test("#fail: FAILs a job with a non-string error code", async (t) => {
@@ -279,9 +283,10 @@ test("#fail: FAILs a job with a non-string error code", async (t) => {
     }
   }
 
-  const error = new CustomError(1234 ,"ETOOMANYDIGITS");
+  const error = new CustomError(1234, "ETOOMANYDIGITS");
 
   t.is(await client.fail(fetched.jid, error), "OK");
+  return;
 });
 
 test("#job: returns a job builder", (t) => {

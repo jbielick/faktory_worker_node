@@ -1,7 +1,7 @@
 import test from "ava";
 
 import { Job } from "../job";
-import { Client } from "../client";
+import { Client, JSONable } from "../client";
 
 test(".jid: generates a uuid jid", (t) => {
   t.truthy(Job.jid().length > 8);
@@ -144,8 +144,10 @@ test("set custom: set the custom context", (t) => {
 
 test("job push sends specification to client", (t) => {
   t.plan(1);
-  const client = {
-    push: (arg: Job) => t.is(arg, job),
+  const client = new Client();
+  client.push = async (arg: JSONable) => {
+    t.is(arg, job);
+    return job.jid;
   };
   const job: Job = new Job("MyJob", <Client>client);
 

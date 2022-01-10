@@ -21,6 +21,7 @@ test("integration: #clear discards all retries", async (t) => {
 
   info = await client.info();
   t.is(info.faktory.tasks.Retries.size, 0);
+  return;
 });
 
 test("integration: #kill moves retries to dead", async (t) => {
@@ -45,6 +46,7 @@ test("integration: #kill moves retries to dead", async (t) => {
   info = await client.info();
   t.is(info.faktory.tasks.Retries.size, 0);
   t.is(info.faktory.tasks.Dead.size, 0);
+  return;
 });
 
 test("integration: #kill moves scheduled to dead", async (t) => {
@@ -83,6 +85,7 @@ test("integration: #requeue moves retries to queue", async (t) => {
   t.is(info.faktory.queues.default, 1);
   t.is(info.faktory.tasks.Retries.size, 0);
   t.is(info.faktory.tasks.Dead.size, 0);
+  return;
 });
 
 test("#clear clears retries", async (t) => {
@@ -412,7 +415,7 @@ test("#ofType disallows nonstring argument", (t) => {
   t.throws(
     () => {
       const mutation = new Mutation(new Client());
-      const MyJob = () => {};
+      const MyJob = () => { };
       // @ts-ignore
       mutation.ofType(MyJob);
     },
