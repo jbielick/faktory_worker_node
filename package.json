@@ -54,7 +54,7 @@
     "node": ">=7"
   },
   "devDependencies": {
-    "@ava/typescript": "^1.1.1",
+    "@ava/typescript": "^3.0.1",
     "@types/debug": "^4.1.5",
     "@types/generic-pool": "^3.1.9",
     "@types/koa-compose": "^3.2.5",
