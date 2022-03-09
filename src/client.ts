@@ -263,7 +263,9 @@ export class Client {
    * @param  {Array<Job>|Array<Object>} jobs jobs payload to push
    * @return {Promise<Record<string, string>>}  response from the faktory server
    */
-  async bulkPush( jobs: Array<Job> | Array<Record<string, unknown>> ): Promise<Record<string, string>> {
+  async bulkPush(
+    jobs: Array<Job> | Array<Record<string, unknown>>
+  ): Promise<Record<string, string>> {
     const payload = jobs.map((job) => {
       if (!!!job.jid) throw new Error("JID must be explicitly provided");
       return Object.assign(
