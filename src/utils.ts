@@ -4,6 +4,10 @@ export function encode(object: Record<string, unknown>): string {
   return JSON.stringify(object);
 }
 
+export function encodeArray(object: Array<Record<string, unknown>>): string {
+  return JSON.stringify(object);
+}
+
 export function sleep(ms: number, value?: unknown): Promise<unknown> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
