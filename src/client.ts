@@ -277,7 +277,6 @@ export class Client {
     return JSON.parse(response);
   }
 
-  
   /**
    * Sends a FLUSH to the server
    * @return {Promise.<string>} resolves with the server's response text
