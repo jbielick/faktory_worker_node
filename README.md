@@ -1,7 +1,7 @@
 # faktory-worker
 
 ![example branch parameter](https://github.com/jbielick/faktory_worker_node/actions/workflows/build.yml/badge.svg)
-[![Coveralls github branch](https://img.shields.io/coveralls/github/jbielick/faktory_worker_node/main.svg)](https://coveralls.io/github/jbielick/faktory_worker_node)
+[![Coverage Status](https://coveralls.io/repos/github/jbielick/faktory_worker_node/badge.svg?branch=main)](https://coveralls.io/github/jbielick/faktory_worker_node?branch=main)
 [![Maintainability](https://api.codeclimate.com/v1/badges/329414a31b696eeaf1b2/maintainability)](https://codeclimate.com/github/jbielick/faktory_worker_node/maintainability)
 ![node](https://img.shields.io/node/v/faktory-worker.svg)
 [![npm](https://img.shields.io/npm/dm/faktory-worker.svg)](https://www.npmjs.com/package/faktory-worker)
