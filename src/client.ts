@@ -4,7 +4,7 @@ import { unescape } from "querystring";
 import { hostname } from "os";
 import { createPool, Pool } from "generic-pool";
 
-import { encode, hash } from "./utils";
+import { encode, encodeArray, hash } from "./utils";
 import { Job, JobPayload, JobType } from "./job";
 import { Mutation, RETRIES, DEAD, SCHEDULED } from "./mutation";
 import { Connection, Greeting, Command } from "./connection";
@@ -256,6 +256,25 @@ export class Client {
     );
     await this.sendWithAssert(["PUSH", encode(payloadWithDefaults)], "OK");
     return payloadWithDefaults.jid;
+  }
+
+  /**
+   * Pushes multiple jobs to the server and return map containing failed job submissions if any
+   * @param  {Array<Job>|Array<Object>} jobs jobs payload to push
+   * @return {Promise<Record<string, string>>}  response from the faktory server
+   */
+  async bulkPush(
+    jobs: Array<Job> | Array<Record<string, unknown>>
+  ): Promise<Record<string, string>> {
+    const payload = jobs.map((job) => {
+      if (!!!job.jid) throw new Error("JID must be explicitly provided");
+      return Object.assign(
+        Job.defaults,
+        "toJSON" in job ? (job as JSONable).toJSON() : job
+      );
+    });
+    const response = await this.send(["PUSHB", encodeArray(payload)]);
+    return JSON.parse(response);
   }
 
   /**

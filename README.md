@@ -38,6 +38,24 @@ const faktory = require("faktory-worker");
 
 A job is a payload of keys and values according to [the faktory job payload specification](https://github.com/contribsys/faktory/wiki/The-Job-Payload). Any keys provided will be passed to the faktory server during `PUSH`. A `jid` (uuid) is created automatically for your job when using this library. See [the spec](https://github.com/contribsys/faktory/wiki/The-Job-Payload) for more options and defaults.
 
+### Pushing bulk jobs
+
+```js
+const faktory = require("faktory-worker");
+
+(async () => {
+  const client = await faktory.connect();
+  let job1 = client.job("ResizeImage", { id: 333, size: "thumb" });
+  let job2 = client.job("ResizeImage", { id: 334, size: "thumb" });    
+  let response = await client.bulkPush([job1, job2]);
+  //Handle Response
+  await client.close(); // reuse client if possible! remember to disconnect!
+})().catch((e) => console.error(e));
+```
+faktory link:
+[https://github.com/contribsys/faktory/blob/main/Changes.md#160](url)
+
+
 ### Processing jobs
 
 ```js
