@@ -1,6 +1,6 @@
 # faktory-worker
 
-[![Travis branch](https://img.shields.io/travis/jbielick/faktory_worker_node/main.svg)](https://travis-ci.org/jbielick/faktory_worker_node)
+![example branch parameter](https://github.com/jbielick/faktory_worker_node/actions/workflows/build.yml/badge.svg)
 [![Coveralls github branch](https://img.shields.io/coveralls/github/jbielick/faktory_worker_node/main.svg)](https://coveralls.io/github/jbielick/faktory_worker_node)
 [![Maintainability](https://api.codeclimate.com/v1/badges/329414a31b696eeaf1b2/maintainability)](https://codeclimate.com/github/jbielick/faktory_worker_node/maintainability)
 ![node](https://img.shields.io/node/v/faktory-worker.svg)
@@ -45,15 +45,15 @@ const faktory = require("faktory-worker");
 (async () => {
   const client = await faktory.connect();
   let job1 = client.job("ResizeImage", { id: 333, size: "thumb" });
-  let job2 = client.job("ResizeImage", { id: 334, size: "thumb" });    
+  let job2 = client.job("ResizeImage", { id: 334, size: "thumb" });
   let response = await client.bulkPush([job1, job2]);
   //Handle Response
   await client.close(); // reuse client if possible! remember to disconnect!
 })().catch((e) => console.error(e));
 ```
+
 faktory link:
 [https://github.com/contribsys/faktory/blob/main/Changes.md#160](url)
-
 
 ### Processing jobs
 
@@ -65,7 +65,7 @@ faktory.register("ResizeImage", async ({ id, size }) => {
   await image.resize(size);
 });
 
-faktory.work().catch(error => {
+faktory.work().catch((error) => {
   console.error(`worker failed to start: ${error}`);
   process.exit(1);
 });
