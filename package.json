@@ -69,7 +69,7 @@
     "eslint-config-prettier": "7.2.0",
     "eslint-plugin-import": "2.23.4",
     "eslint-plugin-prettier": "4.0.0",
-    "get-port": "5.1.1",
+    "get-port": "6.1.2",
     "jsdoc": "3.6.7",
     "jsdoc-to-markdown": "^7.0.1",
     "nyc": "15.1.0",
