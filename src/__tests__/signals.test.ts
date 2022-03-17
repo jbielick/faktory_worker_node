@@ -105,7 +105,7 @@ test("worker exits the process after stop timeout", async (t) => {
   });
 });
 
-test.serial("SIGTERM stops the worker", async (t) => {
+test.serial.skip("SIGTERM stops the worker", async (t) => {
   t.plan(1);
   const worker = create();
 
@@ -125,7 +125,7 @@ test.serial("SIGTERM stops the worker", async (t) => {
   await promise;
 });
 
-test.serial("SIGINT stops the worker", async (t) => {
+test.serial.skip("SIGINT stops the worker", async (t) => {
   t.plan(1);
   const worker = create();
 
@@ -145,7 +145,7 @@ test.serial("SIGINT stops the worker", async (t) => {
   await promise;
 });
 
-test.serial("SIGTSTP quiets the worker", async (t) => {
+test.serial.skip("SIGTSTP quiets the worker", async (t) => {
   t.plan(1);
   const worker = create();
 
