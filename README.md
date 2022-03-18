@@ -46,8 +46,14 @@ const faktory = require("faktory-worker");
   const client = await faktory.connect();
   let job1 = client.job("ResizeImage", { id: 333, size: "thumb" });
   let job2 = client.job("ResizeImage", { id: 334, size: "thumb" });
-  let response = await client.bulkPush([job1, job2]);
-  //Handle Response
+
+  let rejected = await client.pushBulk([job1, job2]);
+
+  // rejected is a dictionary of [jid]: { payload, reason } if any failed to enqueue
+  for (const [jid, { payload, reason }] of Object.entries(obj)) {
+    console.error(`Faild to push job for image ${payload.args[0].id}`);
+  }
+
   await client.close(); // reuse client if possible! remember to disconnect!
 })().catch((e) => console.error(e));
 ```

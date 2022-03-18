@@ -67,7 +67,7 @@ mocked.beat = (state?: string) => ({ socket }: ServerControl) => {
     socket.write(`$${json.length}\r\n${json}\r\n`);
   }
 };
-mocked.fetch = (job: JobPayload | null) => ({ socket }: ServerControl) => {
+mocked.fetch = (job: PartialJobPayload | null) => ({ socket }: ServerControl) => {
   if (job) {
     const string = JSON.stringify(job);
     socket.write(`$${string.length}\r\n${string}\r\n`);

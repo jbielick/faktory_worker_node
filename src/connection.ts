@@ -26,6 +26,9 @@ const SOCKET_TIMEOUT = 10000;
  */
 export type Command = Array<string>;
 
+/**
+ * @private
+ */
 export type Greeting = {
   v: number;
   s: string;
@@ -38,6 +41,9 @@ export type ConnectionOptions = {
   password?: string;
 };
 
+/**
+ * @private
+ */
 interface PendingRequest {
   resolve(message: string): void;
   reject(error: Error): void;

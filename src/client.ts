@@ -4,8 +4,8 @@ import { unescape } from "querystring";
 import { hostname } from "os";
 import { createPool, Pool } from "generic-pool";
 
-import { encode, encodeArray, hash } from "./utils";
-import { Job, JobPayload, JobType } from "./job";
+import { encode, hash, toJobPayloadWithDefaults } from "./utils";
+import { Job, JobPayload, JobType, PartialJobPayload } from "./job";
 import { Mutation, RETRIES, DEAD, SCHEDULED } from "./mutation";
 import { Connection, Greeting, Command } from "./connection";
 import { ConnectionFactory } from "./connection-factory";
@@ -16,6 +16,7 @@ const heartDebug = makeDebug("faktory-worker:client:heart");
 const FAKTORY_PROTOCOL_VERSION = 2;
 const FAKTORY_PROVIDER = process.env.FAKTORY_PROVIDER || "FAKTORY_URL";
 const FAKTORY_URL = process.env[FAKTORY_PROVIDER] || "tcp://localhost:7419";
+const BULK_SIZE_WARN_THRESHOLD = 5001;
 
 export type ClientOptions = {
   host?: string;
@@ -27,9 +28,12 @@ export type ClientOptions = {
   poolSize?: number;
 };
 
-export type JSONable = {
-  toJSON(): Record<string, unknown>;
+export type RejectedJobFromPushBulk = {
+  reason: string;
+  payload: JobPayload;
 };
+
+export type RejectedJobsFromPushBulk = Record<string, RejectedJobFromPushBulk>;
 
 export type Hello = {
   hostname: string;
@@ -247,34 +251,41 @@ export class Client {
    * @param  {Job|Object} job job payload to push
    * @return {Promise.<string>}         the jid for the pushed job
    */
-  async push(job: JSONable | Record<string, unknown>): Promise<string> {
-    const payload = "toJSON" in job ? (job as JSONable).toJSON() : job;
-    const payloadWithDefaults = Object.assign(
-      { jid: Job.jid() },
-      Job.defaults,
-      payload
-    );
-    await this.sendWithAssert(["PUSH", encode(payloadWithDefaults)], "OK");
-    return payloadWithDefaults.jid;
+  async push(job: Job | PartialJobPayload): Promise<string> {
+    const payload = toJobPayloadWithDefaults(job);
+    await this.sendWithAssert(["PUSH", encode(payload)], "OK");
+    return payload.jid;
   }
 
   /**
    * Pushes multiple jobs to the server and return map containing failed job submissions if any
    * @param  {Array<Job>|Array<Object>} jobs jobs payload to push
-   * @return {Promise<Record<string, string>>}  response from the faktory server
+   * @return {Promise<RejectedJobsFromPushBulk>}  response from the faktory server
    */
-  async bulkPush(
-    jobs: Array<Job> | Array<Record<string, unknown>>
-  ): Promise<Record<string, string>> {
-    const payload = jobs.map((job) => {
-      if (!!!job.jid) throw new Error("JID must be explicitly provided");
-      return Object.assign(
-        Job.defaults,
-        "toJSON" in job ? (job as JSONable).toJSON() : job
-      );
+  async pushBulk(
+    jobs: Array<Job | PartialJobPayload>
+  ): Promise<RejectedJobsFromPushBulk> {
+    if (jobs.length > BULK_SIZE_WARN_THRESHOLD) {
+      console.warn(`[WARN] The maximum recommended pushBulk array size is ~1000.
+For the best performance, consider pushing ~1000 jobs at a time to the server.
+`);
+    }
+    const index: Record<string, JobPayload> = {};
+    jobs.forEach((job) => {
+      const payload = toJobPayloadWithDefaults(job);
+      index[payload.jid] = payload;
     });
-    const response = await this.send(["PUSHB", encodeArray(payload)]);
-    return JSON.parse(response);
+    const response: Record<string, string> = JSON.parse(
+      await this.send(["PUSHB", encode(Object.values(index))])
+    );
+    const rejected: RejectedJobsFromPushBulk = {};
+    Object.keys(response).forEach((jid) => {
+      rejected[jid] = {
+        reason: response[jid],
+        payload: index[jid],
+      };
+    });
+    return rejected;
   }
 
   /**

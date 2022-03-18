@@ -45,7 +45,7 @@ underlying connections. Safe for concurrent use and tolerant of unexpected
 connection terminations. Use this object for all interactions with the factory server.</p>
 </dd>
 <dt><a href="#Job">Job</a></dt>
-<dd><p>A class wrapping a <a href="external:JobPayload">JobPayload</a></p>
+<dd><p>A class wrapping a <a href="#JobPayload">JobPayload</a></p>
 <p>Creating and pushing a job is typically accomplished by using
 a faktory client, which implements <code>.job</code> and automatically
 sets the client for the job when calling <code>.push</code> on the job later.</p>
@@ -66,14 +66,56 @@ started per-process.</p>
 </dd>
 </dl>
 
-## External
+## Typedefs
 
 <dl>
-<dt><a href="#external_HI">HI</a> : <code>object</code></dt>
+<dt><a href="#HI">HI</a> : <code>object</code></dt>
 <dd><p>An after-connect initial message from the server to handshake the connection</p>
 </dd>
-<dt><a href="#external_HELLO">HELLO</a> : <code>object</code></dt>
-<dd><p>The client&#39;s response to the server&#39;s <a href="HI">HI</a> to initiate a connection</p>
+<dt><a href="#JobFunction">JobFunction</a> : <code>function</code></dt>
+<dd><p>A function that executes work</p>
+</dd>
+<dt><a href="#Jobtype">Jobtype</a> : <code>string</code></dt>
+<dd><p>Discriminator used by a worker to decide how to execute a job. This will be the name you
+used during register.</p>
+</dd>
+<dt><a href="#JobFunction">JobFunction</a> : <code>function</code></dt>
+<dd><p>A function that executes work</p>
+</dd>
+<dt><a href="#Registry">Registry</a> : <code>Object.&lt;Jobtype, JobFunction&gt;</code></dt>
+<dd><p>A lookup table holding the jobtype constants mapped to their job functions</p>
+</dd>
+<dt><a href="#ContextProvider">ContextProvider</a> : <code>function</code></dt>
+<dd><p>A function returned by a job function that will be called with the job context as its
+only argument and awaited. This exists to allow you to define simple job functions that
+only accept their job args, but in many cases you might need the job&#39;s custom properties
+or stateful connections (like a database connection) in your job and want to attach
+a connection for your job function to use without having to create it itself.</p>
+</dd>
+<dt><a href="#Context">Context</a> : <code>object</code></dt>
+<dd><p>A context object passed through middleware and to a job thunk</p>
+</dd>
+<dt><a href="#ContextProvider">ContextProvider</a> : <code>function</code></dt>
+<dd><p>A function returned by a job function that will be called with the job context as its
+only argument and awaited. This exists to allow you to define simple job functions that
+only accept their job args, but in many cases you might need the job&#39;s custom properties
+or stateful connections (like a database connection) in your job and want to attach
+a connection for your job function to use without having to create it itself.</p>
+</dd>
+<dt><a href="#HELLO">HELLO</a> : <code>object</code></dt>
+<dd><p>The client&#39;s response to the server&#39;s <a href="#HI">HI</a> to initiate a connection</p>
+</dd>
+<dt><a href="#JobPayload">JobPayload</a> : <code>Object</code></dt>
+<dd><p>A work unit that can be scheduled by the faktory work server and executed by clients</p>
+</dd>
+<dt><a href="#RejectedJobFromPushBulk">RejectedJobFromPushBulk</a> : <code>Object</code></dt>
+<dd><p>A lookup table holding the jobtype constants mapped to their job functions</p>
+</dd>
+<dt><a href="#RejectedJobsFromPushBulk">RejectedJobsFromPushBulk</a> : <code>Array</code></dt>
+<dd><p>A lookup table holding the jobtype constants mapped to their job functions</p>
+</dd>
+<dt><a href="#RFC3339_DateTime">RFC3339_DateTime</a> : <code>string</code></dt>
+<dd><p>An RFC3339-format datetime string</p>
 </dd>
 </dl>
 
@@ -118,15 +160,15 @@ faktory.use(async (ctx, next) => {
 <a name="module_faktory+register"></a>
 
 ### faktory.register(name, fn) ⇒ <code>FaktoryControl</code>
-Adds a [JobFunction](external:JobFunction) to the [Registry](Registry)
+Adds a [JobFunction](#JobFunction) to the [Registry](#Registry)
 
 **Kind**: instance method of [<code>faktory</code>](#module_faktory)  
 **Returns**: <code>FaktoryControl</code> - this  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>external:Jobtype</code> | string descriptor for the jobtype |
-| fn | <code>external:JobFunction</code> |  |
+| name | [<code>Jobtype</code>](#Jobtype) | string descriptor for the jobtype |
+| fn | [<code>JobFunction</code>](#JobFunction) |  |
 
 **Example**  
 ```js
@@ -201,6 +243,7 @@ connection terminations. Use this object for all interactions with the factory s
     * [.fetch(...queues)](#Client+fetch) ⇒ <code>Promise.&lt;(object\|null)&gt;</code>
     * [.beat()](#Client+beat) ⇒ <code>Promise.&lt;string&gt;</code>
     * [.push(job)](#Client+push) ⇒ <code>Promise.&lt;string&gt;</code>
+    * [.pushBulk(jobs)](#Client+pushBulk) ⇒ [<code>Promise.&lt;RejectedJobsFromPushBulk&gt;</code>](#RejectedJobsFromPushBulk)
     * [.flush()](#Client+flush) ⇒ <code>Promise.&lt;string&gt;</code>
     * [.info()](#Client+info) ⇒ <code>Promise.&lt;object&gt;</code>
     * [.ack(jid)](#Client+ack) ⇒ <code>Promise.&lt;string&gt;</code>
@@ -307,6 +350,18 @@ Pushes a job payload to the server
 | --- | --- | --- |
 | job | [<code>Job</code>](#Job) \| <code>Object</code> | job payload to push |
 
+<a name="Client+pushBulk"></a>
+
+### client.pushBulk(jobs) ⇒ [<code>Promise.&lt;RejectedJobsFromPushBulk&gt;</code>](#RejectedJobsFromPushBulk)
+Pushes multiple jobs to the server and return map containing failed job submissions if any
+
+**Kind**: instance method of [<code>Client</code>](#Client)  
+**Returns**: [<code>Promise.&lt;RejectedJobsFromPushBulk&gt;</code>](#RejectedJobsFromPushBulk) - response from the faktory server  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| jobs | [<code>Array.&lt;Job&gt;</code>](#Job) \| <code>Array.&lt;Object&gt;</code> | jobs payload to push |
+
 <a name="Client+flush"></a>
 
 ### client.flush() ⇒ <code>Promise.&lt;string&gt;</code>
@@ -349,7 +404,7 @@ Sends a FAIL command to the server for a particular job ID with error informatio
 <a name="Job"></a>
 
 ## Job
-A class wrapping a [JobPayload](external:JobPayload)
+A class wrapping a [JobPayload](#JobPayload)
 
 Creating and pushing a job is typically accomplished by using
 a faktory client, which implements `.job` and automatically
@@ -383,7 +438,7 @@ Creates a job
 
 | Param | Type | Description |
 | --- | --- | --- |
-| jobtype | <code>string</code> | [Jobtype](external:Jobtype) string |
+| jobtype | <code>string</code> | [Jobtype](#Jobtype) string |
 | [client] | [<code>Client</code>](#Client) | a client to use for communicating to the server (if calling push) |
 
 **Example** *(with a faktory client)*  
@@ -398,7 +453,7 @@ const job = client.job('SendWelcomeEmail', id);
 sets the jid
 
 **Kind**: instance property of [<code>Job</code>](#Job)  
-**See**: external:JobPayload  
+**See**: JobPayload  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -410,7 +465,7 @@ sets the jid
 sets the queue
 
 **Kind**: instance property of [<code>Job</code>](#Job)  
-**See**: external:JobPayload  
+**See**: JobPayload  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -422,7 +477,7 @@ sets the queue
 sets the args
 
 **Kind**: instance property of [<code>Job</code>](#Job)  
-**See**: external:JobPayload  
+**See**: JobPayload  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -434,7 +489,7 @@ sets the args
 sets the priority of this job
 
 **Kind**: instance property of [<code>Job</code>](#Job)  
-**See**: external:JobPayload  
+**See**: JobPayload  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -446,11 +501,11 @@ sets the priority of this job
 sets the retry count
 
 **Kind**: instance property of [<code>Job</code>](#Job)  
-**See**: external:JobPayload  
+**See**: JobPayload  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| value | <code>number</code> | {@see external:JobPayload} |
+| value | <code>number</code> | {@see JobPayload} |
 
 <a name="Job+at"></a>
 
@@ -458,7 +513,7 @@ sets the retry count
 sets the scheduled time
 
 **Kind**: instance property of [<code>Job</code>](#Job)  
-**See**: external:JobPayload  
+**See**: JobPayload  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -470,7 +525,7 @@ sets the scheduled time
 sets the reserveFor parameter
 
 **Kind**: instance property of [<code>Job</code>](#Job)  
-**See**: external:JobPayload  
+**See**: JobPayload  
 
 | Param | Type |
 | --- | --- |
@@ -482,7 +537,7 @@ sets the reserveFor parameter
 sets the custom object property
 
 **Kind**: instance property of [<code>Job</code>](#Job)  
-**See**: external:JobPayload  
+**See**: JobPayload  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -495,8 +550,8 @@ Generates an object from this instance for transmission over the wire
 
 **Kind**: instance method of [<code>Job</code>](#Job)  
 **Returns**: <code>object</code> - the job as a serializable javascript object  
-**Link**: external:JobPayload|JobPayload}  
-**See**: external:JobPayload  
+**Link**: JobPayload|JobPayload}  
+**See**: JobPayload  
 <a name="Job+push"></a>
 
 ### job.push() ⇒ <code>string</code>
@@ -660,7 +715,7 @@ started per-process.
 | [options.beatInterval] | <code>Number</code> | <code>15</code> | the amount of time in seconds between each                                             heartbeat |
 | [options.queues] | <code>Array.&lt;string&gt;</code> | <code>[&#x27;default&#x27;]</code> | the queues this worker will fetch jobs from |
 | [options.middleware] | <code>Array.&lt;function()&gt;</code> | <code>[]</code> | a set of middleware to run before performing                                               each job                                       in koa.js-style middleware execution signature |
-| [options.registry] | <code>Registry</code> | <code>Registry</code> | the job registry to use when working |
+| [options.registry] | [<code>Registry</code>](#Registry) | <code>Registry</code> | the job registry to use when working |
 | [options.poolSize] | <code>Number</code> | <code>concurrency+2</code> | the client connection pool size for                                                  this worker |
 
 **Example**  
@@ -731,15 +786,15 @@ faktory.use(async (ctx, next) => {
 <a name="Worker+register"></a>
 
 ### worker.register(name, fn) ⇒ <code>FaktoryControl</code>
-Adds a [JobFunction](external:JobFunction) to the [Registry](Registry)
+Adds a [JobFunction](#JobFunction) to the [Registry](#Registry)
 
 **Kind**: instance method of [<code>Worker</code>](#Worker)  
 **Returns**: <code>FaktoryControl</code> - this  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| name | <code>external:Jobtype</code> | string descriptor for the jobtype |
-| fn | <code>external:JobFunction</code> |  |
+| name | [<code>Jobtype</code>](#Jobtype) | string descriptor for the jobtype |
+| fn | [<code>JobFunction</code>](#JobFunction) |  |
 
 **Example**  
 ```js
@@ -747,30 +802,167 @@ faktory.register('MyJob', (...args) => {
   // some work
 });
 ```
-<a name="external_HI"></a>
+<a name="HI"></a>
 
 ## HI : <code>object</code>
 An after-connect initial message from the server to handshake the connection
 
-**Kind**: global external  
-**See**: external:HELLO  
+**Kind**: global typedef  
+**See**: HELLO  
 **Properties**
 
 | Name | Type | Description |
 | --- | --- | --- |
 | v | <code>number</code> | faktory server protocol version number |
-| i | <code>number</code> | only present when password is required. number of password hash iterations.                      see [HELLO](HELLO). |
-| s | <code>string</code> | only present when password is required. salt for password hashing.                      see [HELLO](HELLO). |
+| i | <code>number</code> | only present when password is required. number of password hash iterations.                      see [HELLO](#HELLO). |
+| s | <code>string</code> | only present when password is required. salt for password hashing.                      see [HELLO](#HELLO). |
 
-<a name="external_HELLO"></a>
+<a name="JobFunction"></a>
 
-## HELLO : <code>object</code>
-The client's response to the server's [HI](HI) to initiate a connection
+## JobFunction : <code>function</code>
+A function that executes work
 
-**Kind**: global external  
+**Kind**: global typedef  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ...args | <code>\*</code> | arguments from the job payload |
+
+**Example**  
+```js
+function(...args) {
+  // does something meaningful
+}
+```
+<a name="Jobtype"></a>
+
+## Jobtype : <code>string</code>
+Discriminator used by a worker to decide how to execute a job. This will be the name you
+used during register.
+
+**Kind**: global typedef  
+**See**: [https://github.com/contribsys/faktory/wiki/The-Job-Payload](https://github.com/contribsys/faktory/wiki/The-Job-Payload)  
+**Example**  
+```js
+// where `MyFunction` is the jobtype
+
+faktory.register('MyFunction', () => {})
+```
+<a name="JobFunction"></a>
+
+## JobFunction : <code>function</code>
+A function that executes work
+
+**Kind**: global typedef  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ...args | <code>\*</code> | arguments from the job payload |
+
+**Example**  
+```js
+function(...args) {
+  // does something meaningful
+}
+```
+<a name="Registry"></a>
+
+## Registry : <code>Object.&lt;Jobtype, JobFunction&gt;</code>
+A lookup table holding the jobtype constants mapped to their job functions
+
+**Kind**: global typedef  
 **See**
 
-- external:HI
+- Jobtype
+- JobFunction
+
+**Example**  
+```js
+{
+  SendWelcomeUser: (id) => {
+    // job fn
+  },
+  GenerateThumbnail: (id, size) => {
+    // job fn
+  }
+}
+```
+<a name="ContextProvider"></a>
+
+## ContextProvider : <code>function</code>
+A function returned by a job function that will be called with the job context as its
+only argument and awaited. This exists to allow you to define simple job functions that
+only accept their job args, but in many cases you might need the job's custom properties
+or stateful connections (like a database connection) in your job and want to attach
+a connection for your job function to use without having to create it itself.
+
+**Kind**: global typedef  
+**See**: Context  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ctx | <code>object</code> | context object containing the job and any other data attached                     via userland-middleware |
+
+**Example**  
+```js
+// assumes you have middleware that attaches `db` to `ctx`
+
+faktory.register('UserWelcomer', (...args) => async (ctx) => {
+  const [ id ] = args;
+  const user = await ctx.db.users.find(id);
+  const email = new WelcomeEmail(user);
+  await email.deliver();
+});
+```
+<a name="Context"></a>
+
+## Context : <code>object</code>
+A context object passed through middleware and to a job thunk
+
+**Kind**: global typedef  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| Context.job | <code>object</code> | the job payload |
+| Context.fn | <code>function</code> | a reference to the job function |
+
+<a name="ContextProvider"></a>
+
+## ContextProvider : <code>function</code>
+A function returned by a job function that will be called with the job context as its
+only argument and awaited. This exists to allow you to define simple job functions that
+only accept their job args, but in many cases you might need the job's custom properties
+or stateful connections (like a database connection) in your job and want to attach
+a connection for your job function to use without having to create it itself.
+
+**Kind**: global typedef  
+**See**: Context  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ctx | <code>object</code> | context object containing the job and any other data attached                     via userland-middleware |
+
+**Example**  
+```js
+// assumes you have middleware that attaches `db` to `ctx`
+
+faktory.register('UserWelcomer', (...args) => async (ctx) => {
+  const [ id ] = args;
+  const user = await ctx.db.users.find(id);
+  const email = new WelcomeEmail(user);
+  await email.deliver();
+});
+```
+<a name="HELLO"></a>
+
+## HELLO : <code>object</code>
+The client's response to the server's [HI](#HI) to initiate a connection
+
+**Kind**: global typedef  
+**See**
+
+- HI
 - [Faktory Protocol Specification](https://github.com/contribsys/faktory/blob/master/docs/protocol-specification.md)
 
 **Properties**
@@ -784,3 +976,68 @@ The client's response to the server's [HI](HI) to initiate a connection
 | labels | <code>Array.&lt;string&gt;</code> | labels that apply to this worker, to allow producers to target work                             units to worker types. |
 | pwdhash | <code>string</code> | This field should be the hexadecimal representation of the ith                            SHA256 hash of the client password concatenated with the value in s. |
 
+<a name="JobPayload"></a>
+
+## JobPayload : <code>Object</code>
+A work unit that can be scheduled by the faktory work server and executed by clients
+
+**Kind**: global typedef  
+**See**
+
+- [https://github.com/contribsys/faktory/wiki/The-Job-Payload](https://github.com/contribsys/faktory/wiki/The-Job-Payload)
+- [Faktory Protocol Specification - Work Units](https://github.com/contribsys/faktory/blob/master/docs/protocol-specification.md#work-units)
+
+**Properties**
+
+| Name | Type | Default | Description |
+| --- | --- | --- | --- |
+| [jid] | <code>string</code> | <code>&quot;uuid()&quot;</code> | globally unique ID for the job. |
+| jobtype | [<code>Jobtype</code>](#Jobtype) |  |  |
+| [queue] | <code>string</code> | <code>&quot;default&quot;</code> | which job queue to push this job onto. |
+| [args] | <code>array</code> | <code>[]</code> | parameters the worker should use when executing the job. |
+| [priority] | <code>number</code> | <code>5</code> | higher priority jobs are dequeued before lower priority jobs. |
+| [retry] | <code>number</code> | <code>25</code> | number of times to retry this job if it fails. 0 discards the                               failed job, -1 saves the failed job to the dead set. |
+| [at] | [<code>RFC3339\_DateTime</code>](#RFC3339_DateTime) |  | run the job at approximately this time; immediately if blank |
+| [reserve_for] | <code>number</code> | <code>1800</code> | number of seconds a job may be held by a worker before it                                       is considered failed. |
+| custom | <code>object</code> |  | provides additional context to the worker executing the job. |
+
+<a name="RejectedJobFromPushBulk"></a>
+
+## RejectedJobFromPushBulk : <code>Object</code>
+A lookup table holding the jobtype constants mapped to their job functions
+
+**Kind**: global typedef  
+**See**: JobPayload  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| reason | <code>string</code> | server-provided reason for the job failing to enqueue. |
+| jobPayload | [<code>JobPayload</code>](#JobPayload) | the job payload that failed to enqueue. |
+
+<a name="RejectedJobsFromPushBulk"></a>
+
+## RejectedJobsFromPushBulk : <code>Array</code>
+A lookup table holding the jobtype constants mapped to their job functions
+
+**Kind**: global typedef  
+**See**
+
+- RejectedJobFromPushBulk
+- JobPayload
+
+<a name="RFC3339_DateTime"></a>
+
+## RFC3339\_DateTime : <code>string</code>
+An RFC3339-format datetime string
+
+**Kind**: global typedef  
+**Example**  
+```js
+"2002-10-02T10:00:00-05:00"
+"2002-10-02T15:00:00Z"
+"2002-10-02T15:00:00.05Z"
+
+new Date().toISOString();
+// => '2019-02-11T15:59:15.593Z'
+```

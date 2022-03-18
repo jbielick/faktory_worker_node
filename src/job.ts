@@ -1,49 +1,23 @@
 import { v4 as uuid } from "uuid";
 import { Client } from "./client";
 
-/**
- * Discriminator used by a worker to decide how to execute a job. This will be the name you
- * used during register.
- *
- * @typedef Jobtype
- * @type {string}
- * @external
- * @example
- * // where `MyFunction` is the jobtype
- *
- * faktory.register('MyFunction', () => {})
- * @see  {@link https://github.com/contribsys/faktory/wiki/The-Job-Payload}
- */
 export type JobType = string;
 
+/**
+ * @private
+ */
 export interface JobCustomParams {
   [propName: string]: unknown;
 }
 
 /**
- * A work unit that can be scheduled by the faktory work server and executed by clients
- *
- * @typedef {object} JobPayload
- * @see  {@link https://github.com/contribsys/faktory/wiki/The-Job-Payload}
- * @external
- * @property {string} [jid=uuid()] globally unique ID for the job.
- * @property {external:Jobtype} jobtype
- * @property {string} [queue=default] which job queue to push this job onto.
- * @property {array} [args=[]] parameters the worker should use when executing the job.
- * @property {number} [priority=5] higher priority jobs are dequeued before lower priority jobs.
- * @property {number} [retry=25] number of times to retry this job if it fails. 0 discards the
- *                               failed job, -1 saves the failed job to the dead set.
- * @property {external:RFC3339_DateTime} [at] run the job at approximately this time; immediately if blank
- * @property {number} [reserve_for=1800] number of seconds a job may be held by a worker before it
- *                                       is considered failed.
- * @property {?object} custom provides additional context to the worker executing the job.
- * @see  {@link https://github.com/contribsys/faktory/blob/master/docs/protocol-specification.md#work-units|Faktory Protocol Specification - Work Units}
+ * @private
  */
 export type PartialJobPayload = {
   jid?: string;
   jobtype: string;
-  queue: string;
-  args: unknown[];
+  queue?: string | undefined;
+  args?: unknown[];
   priority?: number;
   retry?: number;
   custom?: JobCustomParams;
@@ -51,12 +25,27 @@ export type PartialJobPayload = {
   reserve_for?: number;
 };
 
-export type JobPayload = PartialJobPayload & {
-  jid: string;
+/**
+ * @private
+ */
+export type JobDefaults = {
+  queue: string;
+  args: Array<unknown>;
+  priority: number;
+  retry: number;
 };
 
 /**
- * A class wrapping a {@link external:JobPayload|JobPayload}
+ * @private
+ */
+export type JobPayload = PartialJobPayload &
+  JobDefaults & {
+    jid: string;
+    jobtype: string;
+  };
+
+/**
+ * A class wrapping a {@link JobPayload|JobPayload}
  *
  * Creating and pushing a job is typically accomplished by using
  * a faktory client, which implements `.job` and automatically
@@ -75,7 +64,7 @@ export class Job {
   /**
    * Creates a job
    *
-   * @param  {string} jobtype {@link external:Jobtype|Jobtype} string
+   * @param  {string} jobtype {@link Jobtype|Jobtype} string
    * @param  {Client} [client]  a client to use for communicating to the server (if calling push)
    */
   constructor(jobtype: string, client: Client) {
@@ -95,7 +84,7 @@ export class Job {
    * sets the jid
    *
    * @param  {string} value the >8 length jid
-   * @see  external:JobPayload
+   * @see  JobPayload
    */
   set jid(value: string) {
     this.payload.jid = value;
@@ -117,7 +106,7 @@ export class Job {
    * sets the queue
    *
    * @param  {string} value queue name
-   * @see  external:JobPayload
+   * @see  JobPayload
    */
   set queue(value: string) {
     this.payload.queue = value;
@@ -131,13 +120,13 @@ export class Job {
    * sets the args
    *
    * @param  {Array} value array of positional arguments
-   * @see  external:JobPayload
+   * @see  JobPayload
    */
   set args(args: unknown[]) {
     this.payload.args = args;
   }
 
-  get priority(): number | undefined {
+  get priority(): number {
     return this.payload.priority;
   }
 
@@ -145,23 +134,23 @@ export class Job {
    * sets the priority of this job
    *
    * @param  {number} value 0-9
-   * @see  external:JobPayload
+   * @see  JobPayload
    */
-  set priority(value: number | undefined) {
+  set priority(value: number) {
     this.payload.priority = value;
   }
 
-  get retry(): number | undefined {
+  get retry(): number {
     return this.payload.retry;
   }
 
   /**
    * sets the retry count
    *
-   * @param  {number} value {@see external:JobPayload}
-   * @see  external:JobPayload
+   * @param  {number} value {@see JobPayload}
+   * @see  JobPayload
    */
-  set retry(value: number | undefined) {
+  set retry(value: number) {
     this.payload.retry = value;
   }
 
@@ -173,7 +162,7 @@ export class Job {
    * sets the scheduled time
    *
    * @param  {Date|string} value the date object or RFC3339 timestamp string
-   * @see  external:JobPayload
+   * @see  JobPayload
    */
   set at(value: Date | string | undefined) {
     const string = typeof value === "object" ? value.toISOString() : value;
@@ -188,7 +177,7 @@ export class Job {
    * sets the reserveFor parameter
    *
    * @param  {number} value
-   * @see  external:JobPayload
+   * @see  JobPayload
    */
   set reserveFor(value: number | undefined) {
     this.payload.reserve_for = value;
@@ -202,7 +191,7 @@ export class Job {
    * sets the custom object property
    *
    * @param  {object} value the custom data
-   * @see  external:JobPayload
+   * @see  JobPayload
    */
   set custom(custom: JobCustomParams | undefined) {
     this.payload.custom = custom;
@@ -212,8 +201,8 @@ export class Job {
    * Generates an object from this instance for transmission over the wire
    *
    * @return {object} the job as a serializable javascript object
-   *                      @link external:JobPayload|JobPayload}
-   * @see  external:JobPayload
+   *                      @link JobPayload|JobPayload}
+   * @see  JobPayload
    */
   toJSON(): PartialJobPayload {
     return Object.assign({}, this.payload);
@@ -229,9 +218,8 @@ export class Job {
     return this.client.push(this);
   }
 
-  static get defaults(): PartialJobPayload {
+  static get defaults(): JobDefaults {
     return {
-      jobtype: "",
       queue: "default",
       args: [],
       priority: 5,

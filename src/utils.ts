@@ -1,6 +1,9 @@
 import { createHash } from "crypto";
+import { Job, JobPayload, PartialJobPayload } from "./job";
 
-export function encode(object: Record<string, unknown>): string {
+export function encode(
+  object: Record<string, unknown> | Array<Record<string, unknown>>
+): string {
   return JSON.stringify(object);
 }
 
@@ -50,4 +53,11 @@ export function hash(
   }
 
   return hash.digest("hex");
+}
+
+export function toJobPayloadWithDefaults(
+  job: Job | PartialJobPayload
+): JobPayload {
+  const payload = "toJSON" in job ? (job as Job).toJSON() : job;
+  return Object.assign({ jid: Job.jid() }, Job.defaults, payload);
 }

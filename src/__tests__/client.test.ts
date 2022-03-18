@@ -238,7 +238,7 @@ test("#push: defaults job payload values according to spec", async (t) => {
   });
 });
 
-test("#pushb: defaults job payload values according to spec", async (t) => {
+test("#pushBulk: defaults job payload values according to spec", async (t) => {
   let serverJob: Array<JobPayload>;
   await mocked(async (server, port) => {
     server.on("PUSHB", ({ data, socket }) => {
@@ -249,7 +249,9 @@ test("#pushb: defaults job payload values according to spec", async (t) => {
     const jid1 = Job.jid();
     const jid2 = Job.jid();
     const client = new Client({ port });
-    const response = await client.bulkPush([{ jobtype, jid: jid1 }, { jobtype, jid: jid2 } ]);
+
+    await client.pushBulk([{ jobtype, jid: jid1 }, { jobtype, jid: jid2 }]);
+
     t.assert(Array.isArray(serverJob));
     t.assert(serverJob.length === 2);
     t.deepEqual(serverJob, [{
@@ -271,6 +273,23 @@ test("#pushb: defaults job payload values according to spec", async (t) => {
   });
 });
 
+test("#pushBulk resolves with the map of failed JIDs to RejectedJobFromPushBulk", async (t) => {
+  let jid1 = Job.jid();
+  let jid2 = Job.jid();
+  await mocked(async (server, port) => {
+    server.on("PUSHB", ({ data, socket }) => {
+      socket.write("+{\"" + jid1 + "\": \"Failed\"}\r\n");
+    });
+    const client = new Client({ port });
+    const response = await client.pushBulk([
+      { jobtype: "MyJob", jid: jid1, args: [3] },
+      { jobtype: "MyJob", jid: jid2 }]
+    );
+    t.deepEqual(response[jid1].reason, 'Failed');
+    t.deepEqual(response[jid1].payload.args, [3]);
+    return
+  });
+});
 
 test("#fail: FAILs a job", async (t) => {
   const client = new Client();
@@ -377,39 +396,14 @@ test("#job: push resolves with the jid", async (t) => {
   });
 });
 
-test("#job: SUCCESS, bulkPush resolves with the empty json", async (t) => {
+test("#job: SUCCESS, pushBulk resolves with the empty json", async (t) => {
   await mocked(async (server, port) => {
     server.on("PUSHB", ({ data, socket }) => {
       socket.write("+{}\r\n");
     });
     const client = new Client({ port });
-    const response = await client.bulkPush([{ jobtype: "MyJob", jid: Job.jid() }]);
-    t.deepEqual(response , JSON.parse("{}"));
-    return
-  });
-});
-
-test("#job: FAIL, bulkPush resolves with the map of failed JOB Ids to errors", async (t) => {
-  let jid1 = Job.jid();
-  let jid2 = Job.jid();
-  await mocked(async (server, port) => {
-    server.on("PUSHB", ({ data, socket }) => {
-      socket.write("+{\""+jid1+"\": \"Failed To submit\"}\r\n");
-    });
-    const client = new Client({ port });
-    const response = await client.bulkPush([{ jobtype: "MyJob", jid: jid1 }, { jobtype: "MyJob", jid: jid2 }]);
-    t.deepEqual(response , JSON.parse("{\""+jid1+"\": \"Failed To submit\"}"));
-    return
-  });
-});
-
-test("#job: bulkPush rejects when jid is not provided with any of job payloads", async (t) => {
-  await mocked(async (server, port) => {
-    server.on("PUSHB", ({ data, socket }) => {
-      socket.write("+{}\r\n");
-    });
-    const client = new Client({ port });
-    await t.throwsAsync(client.bulkPush([{ jobtype: "MyJob", jid: Job.jid() }, { jobtype: "MyJob" }]), { message: /JID must be explicitly provided/ });
+    const response = await client.pushBulk([{ jobtype: "MyJob", jid: Job.jid() }]);
+    t.deepEqual(response, JSON.parse("{}"));
     return
   });
 });
