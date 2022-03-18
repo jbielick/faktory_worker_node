@@ -1,3 +1,7 @@
+## 4.3.0 | 2022-03-18
+
+- Adds Client#pushBulk for pushing multiple jobs at once to the server (https://github.com/contribsys/faktory/issues/386) - Thanks, @ankitAtVauld
+
 ## 4.2.0 | 2021-06-22
 
 - Refactors concurrency limiting to reduce server chatter for little throughput benefit and reduces the chance of starving the event loop when there are no jobs. 96019a
