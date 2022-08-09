@@ -38,7 +38,7 @@ export type WorkerOptions = {
   concurrency?: number;
   timeout?: number;
   beatInterval?: number;
-  queues?: string[];
+  queues?: string[] | (() => string[]);
   middleware?: Middleware[];
   registry?: Registry;
   poolSize?: number;
@@ -63,7 +63,7 @@ export class Worker extends EventEmitter {
   private concurrency: number;
   private shutdownTimeout: number;
   private beatInterval: number;
-  readonly queues: string[];
+  private readonly _queues: string[] | (() => string[]);
   readonly middleware: Middleware[];
   private readonly registry: Registry;
   private quieted: boolean | undefined;
@@ -81,7 +81,8 @@ export class Worker extends EventEmitter {
    *                                             ungracefully
    * @param  {Number} [options.beatInterval=15]: the amount of time in seconds between each
    *                                             heartbeat
-   * @param  {string[]} [options.queues=['default']]: the queues this worker will fetch jobs from
+   * @param  {string[] | function} [options.queues=['default']]: the queues this worker will fetch jobs from,
+   *                                                             or a zero-argument function to return a list of queues
    * @param  {function[]} [options.middleware=[]]: a set of middleware to run before performing
    *                                               each job
    *                                       in koa.js-style middleware execution signature
@@ -95,9 +96,9 @@ export class Worker extends EventEmitter {
     this.concurrency = options.concurrency || 20;
     this.shutdownTimeout = (options.timeout || 8) * 1000;
     this.beatInterval = (options.beatInterval || 15) * 1000;
-    this.queues = options.queues || [];
-    if (this.queues.length === 0) {
-      this.queues = ["default"];
+    this._queues = options.queues || [];
+    if (this._queues instanceof Array && this._queues.length === 0) {
+      this._queues = ["default"];
     }
     this.middleware = options.middleware || [];
     this.registry = options.registry || {};
@@ -159,6 +160,14 @@ export class Worker extends EventEmitter {
     this.trapSignals();
     this.tick();
     return this;
+  }
+
+  get queues(): string[] {
+    if (this._queues instanceof Function) {
+      return this._queues();
+    }
+
+    return this._queues;
   }
 
   /**

@@ -5,13 +5,13 @@ import { sleep, mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);
 
-test("accepts queues as array", (t) => {
-  const worker = new Worker({ queues: ["test"] });
+test("accepts queues as a function", (t) => {
+  const worker = new Worker({ queues: () => ["q1", "q2"] });
 
   t.deepEqual(
     worker.queues,
-    ["test"],
-    "queue passed as string does not yield array"
+    ["q1", "q2"],
+    "queue passed as function still yields array"
   );
 });
 
