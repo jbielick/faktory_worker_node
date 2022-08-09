@@ -31,6 +31,15 @@ test("adds default to an empty queue array", (t) => {
   t.deepEqual(worker.queues, ["default"]);
 });
 
+test("adds default to an empty queue array returned by a function", (t) => {
+  // typescript rejects functions returning an empty array of strings,
+  // but we need this test to make sure we handle empty-array returns
+  // correctly in untyped javascript
+  const worker = new Worker({ queues: () => [] as any });
+
+  t.deepEqual(worker.queues, ["default"]);
+});
+
 test("passes the password to the client", (t) => {
   const worker = new Worker({ password: "1234" });
 

@@ -38,7 +38,7 @@ export type WorkerOptions = {
   concurrency?: number;
   timeout?: number;
   beatInterval?: number;
-  queues?: string[] | (() => string[]);
+  queues?: string[] | (() => [string, ...string[]]);
   middleware?: Middleware[];
   registry?: Registry;
   poolSize?: number;
@@ -63,7 +63,7 @@ export class Worker extends EventEmitter {
   private concurrency: number;
   private shutdownTimeout: number;
   private beatInterval: number;
-  private readonly _queues: string[] | (() => string[]);
+  private readonly _queues: string[] | (() => [string, ...string[]]);
   readonly middleware: Middleware[];
   private readonly registry: Registry;
   private quieted: boolean | undefined;
@@ -164,7 +164,7 @@ export class Worker extends EventEmitter {
 
   get queues(): string[] {
     if (this._queues instanceof Function) {
-      return this._queues();
+      return this._queues() || ["default"];
     }
 
     return this._queues;
