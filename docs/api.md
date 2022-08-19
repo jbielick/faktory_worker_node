@@ -258,8 +258,8 @@ Creates a Client with a connection pool
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | [options] | <code>object</code> |  |  |
-| [options.url] | <code>string</code> | <code>&quot;tcp://localhost:7419&quot;</code> | connection string for the faktory server                                                    (checks for FAKTORY_PROVIDER and                                                    FAKTORY_URL) |
-| [options.host] | <code>string</code> | <code>&quot;localhost&quot;</code> | host string to connect to |
+| [options.url] | <code>string</code> | <code>&quot;tcp://127.0.0.1:7419&quot;</code> | connection string for the faktory server                                                    (checks for FAKTORY_PROVIDER and                                                    FAKTORY_URL) |
+| [options.host] | <code>string</code> | <code>&quot;127.0.0.1&quot;</code> | host string to connect to |
 | [options.port] | <code>number</code> \| <code>string</code> | <code>7419</code> | port to connect to faktory server on |
 | [options.password] | <code>string</code> |  | faktory server password to use during HELLO |
 | [options.wid] | <code>string</code> |  | optional wid that should be provided to the server                               (only necessary for a worker process consuming jobs) |
