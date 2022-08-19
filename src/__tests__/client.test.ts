@@ -6,9 +6,9 @@ import { mocked, registerCleaner } from "./_helper";
 
 registerCleaner(test);
 
-test("#new: host defaults to localhost", (t) => {
+test("#new: host defaults to 127.0.0.1", (t) => {
   const client = new Client();
-  t.is(client.connectionFactory.host, "localhost");
+  t.is(client.connectionFactory.host, "127.0.0.1");
 });
 
 test("#new: port defaults to 7419", (t) => {
@@ -158,7 +158,7 @@ test("#beat: returns a signal from the server", async (t) => {
 });
 
 test("#connect: rejects connect when connection cannot be established", async (t) => {
-  const client = new Client({ url: "tcp://localhost:1" });
+  const client = new Client({ url: "tcp://127.0.0.1:1" });
 
   await t.throwsAsync(client.connect(), { message: /ECONNREFUSED/ });
 });
@@ -250,25 +250,31 @@ test("#pushBulk: defaults job payload values according to spec", async (t) => {
     const jid2 = Job.jid();
     const client = new Client({ port });
 
-    await client.pushBulk([{ jobtype, jid: jid1 }, { jobtype, jid: jid2 }]);
+    await client.pushBulk([
+      { jobtype, jid: jid1 },
+      { jobtype, jid: jid2 },
+    ]);
 
     t.assert(Array.isArray(serverJob));
     t.assert(serverJob.length === 2);
-    t.deepEqual(serverJob, [{
-      jid: jid1,
-      jobtype: "TestJob",
-      queue: "default",
-      args: [],
-      priority: 5,
-      retry: 25,
-    }, {
-      jid: jid2,
-      jobtype: "TestJob",
-      queue: "default",
-      args: [],
-      priority: 5,
-      retry: 25,
-    }])
+    t.deepEqual(serverJob, [
+      {
+        jid: jid1,
+        jobtype: "TestJob",
+        queue: "default",
+        args: [],
+        priority: 5,
+        retry: 25,
+      },
+      {
+        jid: jid2,
+        jobtype: "TestJob",
+        queue: "default",
+        args: [],
+        priority: 5,
+        retry: 25,
+      },
+    ]);
     return;
   });
 });
@@ -278,16 +284,16 @@ test("#pushBulk resolves with the map of failed JIDs to RejectedJobFromPushBulk"
   let jid2 = Job.jid();
   await mocked(async (server, port) => {
     server.on("PUSHB", ({ data, socket }) => {
-      socket.write("+{\"" + jid1 + "\": \"Failed\"}\r\n");
+      socket.write('+{"' + jid1 + '": "Failed"}\r\n');
     });
     const client = new Client({ port });
     const response = await client.pushBulk([
       { jobtype: "MyJob", jid: jid1, args: [3] },
-      { jobtype: "MyJob", jid: jid2 }]
-    );
-    t.deepEqual(response[jid1].reason, 'Failed');
+      { jobtype: "MyJob", jid: jid2 },
+    ]);
+    t.deepEqual(response[jid1].reason, "Failed");
     t.deepEqual(response[jid1].payload.args, [3]);
-    return
+    return;
   });
 });
 
@@ -402,12 +408,12 @@ test("#job: SUCCESS, pushBulk resolves with the empty json", async (t) => {
       socket.write("+{}\r\n");
     });
     const client = new Client({ port });
-    const response = await client.pushBulk([{ jobtype: "MyJob", jid: Job.jid() }]);
+    const response = await client.pushBulk([
+      { jobtype: "MyJob", jid: Job.jid() },
+    ]);
     t.deepEqual(response, JSON.parse("{}"));
-    return
+    return;
   });
 });
 
-test.skip('shutdown: shutsdown before timeout', async (t) => {
-
-});
+test.skip("shutdown: shutsdown before timeout", async (t) => {});

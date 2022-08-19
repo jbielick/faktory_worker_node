@@ -201,7 +201,7 @@ Use `DEBUG=faktory*` to see related debug log lines.
 
 - How do I specify the Faktory server location?
 
-By default, it will connect to `tcp://localhost:7419`.
+By default, it will connect to `tcp://127.0.0.1:7419`.
 Use FAKTORY_URL to specify the URL, e.g. `tcp://faktory.example.com:12345` or use FAKTORY_PROVIDER to specify the environment variable which contains the URL: `FAKTORY_PROVIDER=FAKTORYTOGO_URL`. This level of
 indirection is useful for SaaSes, Heroku Addons, etc.
 
@@ -276,7 +276,7 @@ faktory.register("TouchRecord", (id) => async ({ db }) => {
 
 Install docker.
 
-`bin/server` will run the faktory server in a docker container. The server is available at `localhost:7419`
+`bin/server` will run the faktory server in a docker container. The server is available at `127.0.0.1:7419`
 
 ## Debugging
 

@@ -14,7 +14,7 @@ jobs:
 
     services:
       faktory:
-        image: contribsys/faktory:1.5.1
+        image: contribsys/faktory:1.6.1
         ports:
           - 7419:7419
 
