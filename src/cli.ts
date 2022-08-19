@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const program = require("commander");
+import { Command } from "commander";
+const program = new Command();
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { version } = require("../package.json");
 
@@ -9,11 +10,23 @@ function collect(val: string, memo: Array<string>) {
   return memo.concat(val);
 }
 
-function collectSplit(val: string, memo: Array<string>) {
-  return memo.concat(val.split(","));
+type QueuesFromArgs = {
+  unweighted: string[];
+  weighted: { [queue: string]: number };
+};
+
+function collectQueues(val: string, memo: QueuesFromArgs): QueuesFromArgs {
+  const elements = val.split(",");
+  if (elements.length > 1) {
+    const weight = Number(elements.pop());
+    memo.weighted[elements.join(",")] = weight;
+  } else {
+    memo.unweighted = memo.unweighted.concat(val);
+  }
+  return memo;
 }
 
-module.exports = program
+program
   .version(`faktory-worker ${version}`)
   .usage("[options]")
   .description(
@@ -26,10 +39,10 @@ module.exports = program
   `
   )
   .option(
-    "-q, --queue <queue[,weight]>",
+    "-q, --queue <name>",
     "queues to process with optional weights",
-    collectSplit,
-    []
+    collectQueues,
+    { weighted: {}, unweighted: [] }
   )
   .option("-c, --concurrency <n>", "number of concurrent workers", parseInt)
   .option("-t, --timeout <n>", "shutdown timeout", parseInt)
@@ -40,5 +53,26 @@ module.exports = program
   .option("-v, --version", "print version and exit")
   .parse(process.argv);
 
-program.queues = program.queue;
-program.labels = program.label;
+const options = program.opts();
+
+const {
+  queue: { weighted, unweighted },
+} = options;
+
+if (Object.keys(weighted).length > 0 && unweighted.length > 0) {
+  console.error(`error: cannot mix weighted and unweighted queue arguments.
+
+Tips:
+  For strictly ordered queues, do not provide weights.
+  For weighted-random queues, provide queue-name,weight pairs for each --queue argument.
+  For equally-weighted, random queues, provide queue-name,1 pairs (all weighted equally) for
+    each --queue argument.
+`);
+  process.exit(1);
+} else if (Object.keys(weighted).length > 0) {
+  options.queues = weighted;
+} else {
+  options.queues = unweighted;
+}
+
+module.exports = { program, options };
