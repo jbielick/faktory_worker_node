@@ -15,7 +15,7 @@ const heartDebug = makeDebug("faktory-worker:client:heart");
 
 const FAKTORY_PROTOCOL_VERSION = 2;
 const FAKTORY_PROVIDER = process.env.FAKTORY_PROVIDER || "FAKTORY_URL";
-const FAKTORY_URL = process.env[FAKTORY_PROVIDER] || "tcp://localhost:7419";
+const FAKTORY_URL = process.env[FAKTORY_PROVIDER] || "tcp://127.0.0.1:7419";
 const BULK_SIZE_WARN_THRESHOLD = 5001;
 
 export type ClientOptions = {
@@ -86,10 +86,10 @@ export class Client {
    * Creates a Client with a connection pool
    *
    * @param {object} [options]
-   * @param {string} [options.url=tcp://localhost:7419] connection string for the faktory server
+   * @param {string} [options.url=tcp://127.0.0.1:7419] connection string for the faktory server
    *                                                    (checks for FAKTORY_PROVIDER and
    *                                                    FAKTORY_URL)
-   * @param {string} [options.host=localhost] host string to connect to
+   * @param {string} [options.host=127.0.0.1] host string to connect to
    * @param {number|string} [options.port=7419] port to connect to faktory server on
    * @param {string} [options.password] faktory server password to use during HELLO
    * @param {string} [options.wid] optional wid that should be provided to the server

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 const faktory = require("../lib/faktory");
-const program = require("../lib/cli");
+const { options } = require("../lib/cli");
 
-faktory.work(program).catch((error) => {
+faktory.work(options).catch((error) => {
   console.error(error);
   process.exit(1);
 });

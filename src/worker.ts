@@ -9,6 +9,7 @@ import { Client, ClientOptions } from "./client";
 import { wrapNonErrors } from "./utils";
 import { sleep } from "./utils";
 import createExecutionChain from "./create-execution-chain";
+import { strictlyOrdered, weightedRandom } from "./queues";
 
 const debug = makeDebug("faktory-worker:worker");
 
@@ -19,9 +20,11 @@ export type Registry = {
 export type JobFunctionContextWrapper = {
   (...args: unknown[]): ContextProvider;
 };
+
 export type UnWrappedJobFunction = {
   (...args: unknown[]): unknown;
 };
+
 export type JobFunction = JobFunctionContextWrapper | UnWrappedJobFunction;
 
 export type ContextProvider = (ctx: MiddlewareContext) => unknown;
@@ -38,7 +41,7 @@ export type WorkerOptions = {
   concurrency?: number;
   timeout?: number;
   beatInterval?: number;
-  queues?: string[];
+  queues?: string[] | { [name: string]: number } | (() => string[]);
   middleware?: Middleware[];
   registry?: Registry;
   poolSize?: number;
@@ -63,7 +66,7 @@ export class Worker extends EventEmitter {
   private concurrency: number;
   private shutdownTimeout: number;
   private beatInterval: number;
-  readonly queues: string[];
+  private readonly queueFn: () => string[];
   readonly middleware: Middleware[];
   private readonly registry: Registry;
   private quieted: boolean | undefined;
@@ -95,9 +98,13 @@ export class Worker extends EventEmitter {
     this.concurrency = options.concurrency || 20;
     this.shutdownTimeout = (options.timeout || 8) * 1000;
     this.beatInterval = (options.beatInterval || 15) * 1000;
-    this.queues = options.queues || [];
-    if (this.queues.length === 0) {
-      this.queues = ["default"];
+    const queues = options.queues || ["default"];
+    if (typeof queues === "function") {
+      this.queueFn = queues;
+    } else if (Array.isArray(queues)) {
+      this.queueFn = strictlyOrdered(queues);
+    } else {
+      this.queueFn = weightedRandom(queues);
     }
     this.middleware = options.middleware || [];
     this.registry = options.registry || {};
@@ -224,6 +231,10 @@ export class Worker extends EventEmitter {
       default:
         break;
     }
+  }
+
+  get queues(): string[] {
+    return this.queueFn();
   }
 
   /**

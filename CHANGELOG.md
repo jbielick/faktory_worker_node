@@ -1,3 +1,8 @@
+## 4.4.0 | 2022-08-19
+
+- Adds support for weighted random queue fetching. Providing queues as an array has no change in behavior—it is still strictly ordered. (#328 - Thanks @ThePletch)
+- Not specifying a connection host will default explicitly to `127.0.0.1` now instead of `localhost` to force an IPv4 connection.
+
 ## 4.3.0 | 2022-03-18
 
 - Adds Client#pushBulk for pushing multiple jobs at once to the server (https://github.com/contribsys/faktory/issues/386) - Thanks, @ankitAtVauld

@@ -121,7 +121,7 @@ export class Connection extends EventEmitter {
       this.pending.unshift({ resolve, reject });
     });
 
-    this.socket.connect(<number>this.port, this.host || "");
+    this.socket.connect(<number>this.port, this.host || "127.0.0.1");
     const response = <string>await receiveGreetingResponse;
     const greeting = JSON.parse(response.split(" ")[1]);
     this.emit("greeting", greeting);
