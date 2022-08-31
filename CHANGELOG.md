@@ -1,3 +1,8 @@
+## 4.5.0 | 2022-08-31
+
+- Add support for requiring files from the `faktory-work` CLI
+- Fix issue in which `faktory-work` would not use `default` as a queue when no queues were provided
+
 ## 4.4.0 | 2022-08-19
 
 - Adds support for weighted random queue fetching. Providing queues as an array has no change in behavior—it is still strictly ordered. (#328 - Thanks @ThePletch)
