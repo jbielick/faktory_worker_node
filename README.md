@@ -92,7 +92,7 @@ Queues can be specified in two ways: **strictly ordered** and **weighted random*
 To specify queues to be worked on in a strict order (empty one, then the next, etc), use an array of queue names for `options.queues`.
 
 ```js
-faktory.work({ queues: ['immediately', 'afterwards'] })
+faktory.work({ queues: ["immediately", "afterwards"] });
 ```
 
 In the previous example, all jobs are be fetched and started from the `immediately` queue before any are fetched and started from the `afterwards` queue.
@@ -102,13 +102,13 @@ In the previous example, all jobs are be fetched and started from the `immediate
 To specify queues to be worked on randomly, use an object of `[queueName: string]: number` entries. To ensure that some queues are processed more frequently than others, use a _higher_ weight number for that queue. Weights are relative. `100`, `200`, and `300` is no different than `1`, `2`, and `3`, respectively.
 
 ```js
-faktory.work({ queues: { critical: 10, default: 1 } })
+faktory.work({ queues: { critical: 10, default: 1 } });
 ```
 
 In the example above, the `critical` queue, weighted `10`, will have _roughly_ 10 jobs processed for every 1 job processed in the `default` queue. For equal weighting (just random queue processing), see below:
 
 ```js
-faktory.work({ queues: { useast: 1, uswest: 1 } })
+faktory.work({ queues: { useast: 1, uswest: 1 } });
 ```
 
 In the example above, `useast` and `uswest` have equal weights are worked on concurrently.
@@ -257,9 +257,9 @@ faktory.register("TouchRecord", (id) => async ({ db }) => {
 
 ## Features
 
-- [ ] CLI: Require jobs from folder and automatically register
 - [ ] Customizable logger
 - [ ] Pro features
+- [x] CLI: Require jobs from folder and automatically register
 - [x] Mutate API
 - [x] Connection pooling
 - [x] Handle signals from server heartbeat response
