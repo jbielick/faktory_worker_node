@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
+import path from "path";
 const program = new Command();
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -26,6 +27,16 @@ function collectQueues(val: string, memo: QueuesFromArgs): QueuesFromArgs {
   return memo;
 }
 
+function requirePath(val: string) {
+  if (path.isAbsolute(val)) {
+    require(val);
+  } else if (val.startsWith(".")) {
+    require(path.resolve(val));
+  } else {
+    require(val);
+  }
+}
+
 program
   .version(`faktory-worker ${version}`)
   .usage("[options]")
@@ -48,7 +59,7 @@ program
   .option("-t, --timeout <n>", "shutdown timeout", parseInt)
   // .option('-e, --environment <env>', 'application environment')
   .option("-l, --label <label>", "worker label", collect, [])
-  // .option('-r, --require <path>', 'worker directory to require')
+  .option("-r, --require <path>", "worker directory to require", requirePath)
   .option("-v, --verbose", "print verbose output")
   .option("-v, --version", "print version and exit")
   .parse(process.argv);
