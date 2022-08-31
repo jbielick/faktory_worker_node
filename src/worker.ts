@@ -98,11 +98,11 @@ export class Worker extends EventEmitter {
     this.concurrency = options.concurrency || 20;
     this.shutdownTimeout = (options.timeout || 8) * 1000;
     this.beatInterval = (options.beatInterval || 15) * 1000;
-    const queues = options.queues || ["default"];
+    const queues = options.queues || [];
     if (typeof queues === "function") {
       this.queueFn = queues;
     } else if (Array.isArray(queues)) {
-      this.queueFn = strictlyOrdered(queues);
+      this.queueFn = strictlyOrdered(queues.length ? queues : ["default"]);
     } else {
       this.queueFn = weightedRandom(queues);
     }
