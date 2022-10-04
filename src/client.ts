@@ -117,7 +117,7 @@ export class Client {
       min: 1,
       max: options.poolSize || 20,
       autostart: false,
-    });
+    }).on("factoryCreateError", (e) => console.error(e));
   }
 
   static assertVersion(version: number): void {

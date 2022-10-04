@@ -59,8 +59,13 @@ export class ConnectionFactory implements Factory<Connection> {
       this.attempts = 0;
     } catch (e) {
       this.attempts += 1;
-      debug("attempts=%i", this.attempts);
-      await sleep(200 * Math.min(this.attempts, 20));
+      const napTime = 200 * Math.min(this.attempts, 20);
+      debug(
+        "connection failed: attempts=%i backoff=%ims",
+        this.attempts,
+        napTime
+      );
+      await sleep(napTime);
       throw e;
     }
     return connection;
