@@ -46,6 +46,20 @@ incorrect:\treject('message')
 export const hash = (function () {
   const hashCache: Record<string, Record<string, Record<number, string>>> = {};
 
+  function generateHash(
+    password: string,
+    salt: string,
+    iterations: number
+  ): string {
+    let hash = createHash("sha256").update(`${password}${salt}`);
+
+    for (let i = 1; i < iterations; i += 1) {
+      hash = createHash("sha256").update(hash.digest());
+    }
+
+    return hash.digest("hex");
+  }
+
   return function hash(
     password: string,
     salt: string,
@@ -57,13 +71,7 @@ export const hash = (function () {
       return cachedHash;
     }
 
-    let hash = createHash("sha256").update(`${password}${salt}`);
-
-    for (let i = 1; i < iterations; i += 1) {
-      hash = createHash("sha256").update(hash.digest());
-    }
-
-    const hexHash = hash.digest("hex");
+    const hexHash = generateHash(password, salt, iterations);
 
     // add the hex result to our cache
     hashCache[password] = {
