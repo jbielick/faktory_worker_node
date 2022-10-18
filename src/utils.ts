@@ -50,7 +50,7 @@ export const hash = (function () {
     password: string,
     salt: string,
     iterations: number,
-    { ignoreCache }: { ignoreCache: boolean } = { ignoreCache: true },
+    { ignoreCache }: { ignoreCache: boolean } = { ignoreCache: true }
   ): string {
     const cachedHash = hashCache[password]?.[salt]?.[iterations];
     if (cachedHash !== undefined && !ignoreCache) {
@@ -75,7 +75,7 @@ export const hash = (function () {
     };
 
     return hexHash;
-  }
+  };
 })();
 
 export function toJobPayloadWithDefaults(
