@@ -35,25 +35,48 @@ incorrect:\treject('message')
 
 /**
  * hashes the password with server-provided salt
- * @param  {String} password   the password to the faktory server
- * @param  {String} salt       the server-provided salt to use in hashing
- * @param  {Number} iterations the number of time to apply the salt
- * @return {String}            the password hash
+ * @param  {String}  password            the password to the faktory server
+ * @param  {String}  salt                the server-provided salt to use in hashing
+ * @param  {Number}  iterations          the number of time to apply the salt
+ * @param            options             internal options for execution
+ * @param  {Boolean} options.ignoreCache specify as true to always calculate the hash, even if a cached result exists.
+ * @return {String}                      the password hash
  * @private
  */
-export function hash(
-  password: string,
-  salt: string,
-  iterations: number
-): string {
-  let hash = createHash("sha256").update(`${password}${salt}`);
+export const hash = (function () {
+  const hashCache: Record<string, Record<string, Record<number, string>>> = {};
 
-  for (let i = 1; i < iterations; i += 1) {
-    hash = createHash("sha256").update(hash.digest());
+  return function hash(
+    password: string,
+    salt: string,
+    iterations: number,
+    { ignoreCache }: { ignoreCache: boolean } = { ignoreCache: true },
+  ): string {
+    const cachedHash = hashCache[password]?.[salt]?.[iterations];
+    if (cachedHash !== undefined && !ignoreCache) {
+      return cachedHash;
+    }
+
+    let hash = createHash("sha256").update(`${password}${salt}`);
+
+    for (let i = 1; i < iterations; i += 1) {
+      hash = createHash("sha256").update(hash.digest());
+    }
+
+    const hexHash = hash.digest("hex");
+
+    // add the hex result to our cache
+    hashCache[password] = {
+      ...(hashCache[password] || {}),
+      [salt]: {
+        ...(hashCache[password]?.[salt] || {}),
+        [iterations]: hexHash,
+      },
+    };
+
+    return hexHash;
   }
-
-  return hash.digest("hex");
-}
+})();
 
 export function toJobPayloadWithDefaults(
   job: Job | PartialJobPayload
