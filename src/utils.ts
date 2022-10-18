@@ -52,9 +52,9 @@ function generateHash(
 
 /**
  * hashes the password with server-provided salt
- * @param  {String}  password            the password to the faktory server
+ * @param  {String}  password            the password for the faktory server
  * @param  {String}  salt                the server-provided salt to use in hashing
- * @param  {Number}  iterations          the number of time to apply the salt
+ * @param  {Number}  iterations          the number of times to apply the salt
  * @param            options             internal options for execution
  * @param  {Boolean} options.ignoreCache specify as true to always calculate the hash, even if a cached result exists.
  * @return {String}                      the password hash
