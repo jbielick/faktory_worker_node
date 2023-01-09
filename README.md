@@ -50,7 +50,7 @@ const faktory = require("faktory-worker");
   let rejected = await client.pushBulk([job1, job2]);
 
   // rejected is a dictionary of [jid]: { payload, reason } if any failed to enqueue
-  for (const [jid, { payload, reason }] of Object.entries(obj)) {
+  for (const [jid, { payload, reason }] of Object.entries(rejected)) {
     console.error(`Faild to push job for image ${payload.args[0].id}`);
   }
 
