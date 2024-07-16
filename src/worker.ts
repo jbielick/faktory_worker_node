@@ -151,6 +151,7 @@ export class Worker extends EventEmitter {
    */
   async work(): Promise<Worker> {
     debug("work concurrency=%i", this.concurrency);
+    this.quieted = false;
     this.execute = createExecutionChain(this.middleware, this.registry);
     await this.beat();
     this.pulse = setInterval(async () => {
