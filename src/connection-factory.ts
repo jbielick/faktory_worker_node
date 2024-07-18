@@ -1,6 +1,6 @@
 import makeDebug from "debug";
-import { Connection, Greeting } from "./connection";
 import { Factory } from "generic-pool";
+import { Connection, ConnectionOptions, Greeting } from "./connection";
 import { sleep } from "./utils";
 
 const debug = makeDebug("faktory-worker:connection-pool");
@@ -18,6 +18,7 @@ export class ConnectionFactory implements Factory<Connection> {
   host: string;
   port: string | number;
   handshake: handshaker;
+  tlsOptions: ConnectionOptions["tlsOptions"];
   attempts: number;
   onConnectionError: (err: Error) => void;
 
@@ -32,14 +33,17 @@ export class ConnectionFactory implements Factory<Connection> {
     host,
     port,
     handshake,
+    tlsOptions,
   }: {
     host: string;
     port: string | number;
     handshake: handshaker;
+    tlsOptions: ConnectionOptions["tlsOptions"];
   }) {
     this.host = host;
     this.port = port;
     this.handshake = handshake;
+    this.tlsOptions = tlsOptions;
     this.attempts = 0;
     this.onConnectionError = console.error.bind(console);
   }
@@ -51,7 +55,7 @@ export class ConnectionFactory implements Factory<Connection> {
    */
   async create(): Promise<Connection> {
     debug("+1");
-    const connection = new Connection(this.port, this.host);
+    const connection = new Connection(this.port, this.host, this.tlsOptions);
     connection.on("error", this.onConnectionError);
     try {
       const greeting = await connection.open();

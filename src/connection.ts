@@ -1,9 +1,13 @@
-import { Socket } from "net";
 import { strictEqual } from "assert";
-import { EventEmitter } from "events";
 import makeDebug from "debug";
-
+import { EventEmitter } from "events";
+import { Socket } from "net";
 import RedisParser from "redis-parser";
+import {
+  TLSSocket,
+  connect as tlsConnect,
+  ConnectionOptions as tlsConnectionOptions,
+} from "tls";
 
 const debug = makeDebug("faktory-worker:connection");
 
@@ -39,6 +43,7 @@ export type ConnectionOptions = {
   host?: string;
   port?: string | number;
   password?: string;
+  tlsOptions?: tlsConnectionOptions;
 };
 
 /**
@@ -63,21 +68,28 @@ export class Connection extends EventEmitter {
   host: string | undefined;
   port: string | number;
   pending: PendingRequest[];
-  socket: Socket;
+  socket: Socket | TLSSocket;
   parser: RedisParser;
   lastError: Error;
+  tlsOptions: tlsConnectionOptions | undefined;
 
   /**
    * @param {Number} port the port to connect on
    * @param {String} host the hostname to connect to
+   * @param {Object} options additional options
    */
-  constructor(port: string | number, host?: string) {
+  constructor(
+    port: string | number,
+    host?: string,
+    tlsOptions?: tlsConnectionOptions
+  ) {
     super();
     this.host = host;
     this.port = port;
     this.connected = false;
     this.socket = new Socket();
     this.socket.setKeepAlive(true);
+    this.tlsOptions = tlsOptions;
     this.pending = [];
     this.parser = new RedisParser({
       returnReply: (response: string) => this.pending.pop()?.resolve(response),
@@ -121,7 +133,18 @@ export class Connection extends EventEmitter {
       this.pending.unshift({ resolve, reject });
     });
 
-    this.socket.connect(<number>this.port, this.host || "127.0.0.1");
+    if (this.tlsOptions !== undefined) {
+      this.socket = tlsConnect({
+        host: this.host,
+        port: Number(this.port),
+        ...this.tlsOptions,
+      });
+      this.socket.setKeepAlive(true);
+      this.listen(); // Re-setup event listeners for the TLS socket
+    } else {
+      this.socket.connect(<number>this.port, this.host || "127.0.0.1");
+    }
+
     const response = <string>await receiveGreetingResponse;
     const greeting = JSON.parse(response.split(" ")[1]);
     this.emit("greeting", greeting);
