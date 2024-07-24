@@ -52,7 +52,7 @@
     }
   },
   "engines": {
-    "node": ">=14"
+    "node": ">=16"
   },
   "devDependencies": {
     "@ava/typescript": "3.0.1",
