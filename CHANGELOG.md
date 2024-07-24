@@ -1,3 +1,13 @@
+## 4.6.0 | 2024-07-24
+
+Features:
+
+- Add TLS support thanks to @willhoney7 (#406)
+
+Bugfixes:
+
+- Worker.work now unquiets. Thank you @gijoehosaphat (#404)
+
 ## 4.5.0 | 2022-08-31
 
 - Add support for requiring files from the `faktory-work` CLI
