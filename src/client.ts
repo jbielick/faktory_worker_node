@@ -1,14 +1,14 @@
 import { default as makeDebug } from "debug";
-import { URL } from "url";
-import { unescape } from "querystring";
-import { hostname } from "os";
 import { createPool, Pool } from "generic-pool";
+import { hostname } from "os";
+import { unescape } from "querystring";
+import { URL } from "url";
 
-import { encode, hash, toJobPayloadWithDefaults } from "./utils";
-import { Job, JobPayload, JobType, PartialJobPayload } from "./job";
-import { Mutation, RETRIES, DEAD, SCHEDULED } from "./mutation";
-import { Connection, Greeting, Command } from "./connection";
+import { Command, Connection, ConnectionOptions, Greeting } from "./connection";
 import { ConnectionFactory } from "./connection-factory";
+import { Job, JobPayload, JobType, PartialJobPayload } from "./job";
+import { DEAD, Mutation, RETRIES, SCHEDULED } from "./mutation";
+import { encode, hash, toJobPayloadWithDefaults } from "./utils";
 
 const debug = makeDebug("faktory-worker:client");
 const heartDebug = makeDebug("faktory-worker:client:heart");
@@ -26,6 +26,7 @@ export type ClientOptions = {
   wid?: string;
   labels?: string[];
   poolSize?: number;
+  tlsOptions?: ConnectionOptions["tlsOptions"];
 };
 
 export type RejectedJobFromPushBulk = {
@@ -108,6 +109,7 @@ export class Client {
       host: options.host || url.hostname,
       port: options.port || url.port,
       handshake: this.handshake.bind(this),
+      tlsOptions: options.tlsOptions || undefined,
     });
     this.pool = createPool(this.connectionFactory, {
       testOnBorrow: true,
