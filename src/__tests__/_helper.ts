@@ -35,6 +35,7 @@ export const mockServer = (): Server => {
     socket.write('+HI {"v":2,"s":"abc","i":3}\r\n');
     server.emit("HI");
   });
+  server.on('error', console.error);
   return server;
 };
 
@@ -45,12 +46,15 @@ type ServerUser = {
 export const mocked = async (fn: ServerUser): Promise<unknown> => {
   const server = mockServer();
   const port = await getPort();
-  server.listen(port, "127.0.0.1");
-  try {
-    return fn(server, port);
-  } finally {
-    await new Promise<void>((resolve) => server.close(() => resolve()));
-  }
+  return new Promise((resolve, reject) => {
+    server.listen({ port, host: "127.0.0.1" }, async () => {
+      try {
+        resolve(await fn(server, port));
+      } finally {
+        server.close(resolve);
+      }
+    });
+  })
 };
 
 mocked.ok = () => ({ socket }: ServerControl) => {
