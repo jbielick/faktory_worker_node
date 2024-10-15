@@ -79,9 +79,8 @@ export class Worker extends EventEmitter {
    * @param {object} [options]
    * @param  {String} [options.wid=uuid().slice(0, 8)]: the wid the worker will use
    * @param  {Number} [options.concurrency=20]: how many jobs this worker can process at once
-   * @param  {Number} [options.shutdownTimeout=8]: the amount of time in seconds that the worker
-   *                                             may take to finish a job before exiting
-   *                                             ungracefully
+   * @param  {Number} [options.timeout=8]: the amount of time in seconds that the worker
+   *                                       may take to finish a job before exiting ungracefully
    * @param  {Number} [options.beatInterval=15]: the amount of time in seconds between each
    *                                             heartbeat
    * @param  {string[]} [options.queues=['default']]: the queues this worker will fetch jobs from
