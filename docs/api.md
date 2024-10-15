@@ -711,7 +711,7 @@ started per-process.
 | [options] | <code>object</code> |  |  |
 | [options.wid] | <code>String</code> | <code>uuid().slice(0, 8)</code> | the wid the worker will use |
 | [options.concurrency] | <code>Number</code> | <code>20</code> | how many jobs this worker can process at once |
-| [options.shutdownTimeout] | <code>Number</code> | <code>8</code> | the amount of time in seconds that the worker                                             may take to finish a job before exiting                                             ungracefully |
+| [options.timeout] | <code>Number</code> | <code>8</code> | the amount of time in seconds that the worker                                       may take to finish a job before exiting ungracefully |
 | [options.beatInterval] | <code>Number</code> | <code>15</code> | the amount of time in seconds between each                                             heartbeat |
 | [options.queues] | <code>Array.&lt;string&gt;</code> | <code>[&#x27;default&#x27;]</code> | the queues this worker will fetch jobs from |
 | [options.middleware] | <code>Array.&lt;function()&gt;</code> | <code>[]</code> | a set of middleware to run before performing                                               each job                                       in koa.js-style middleware execution signature |
