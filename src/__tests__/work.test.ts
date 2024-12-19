@@ -15,7 +15,7 @@ test("passes args to jobfn", async (t) => {
   const args = [1, 2, "three"];
   const { queue, jobtype } = await push({ args });
 
-  await new Promise<void>((resolve) => {
+  return new Promise<void>((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
@@ -31,10 +31,11 @@ test("passes args to jobfn", async (t) => {
 });
 
 test("awaits async jobfns", async (t) => {
+  t.plan(1);
   const args = [1, 2, "three"];
   const { queue, jobtype } = await push({ args });
 
-  await new Promise<void>((resolve) => {
+  return new Promise<void>((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
@@ -54,15 +55,17 @@ test("handles sync jobfn and sync thunk", async (t) => {
   const args = [1, 2, "three"];
   const { queue, jobtype, jid } = await push({ args });
 
-  await new Promise<void>((resolve) => {
+  return new Promise<void>((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
-        [jobtype]: (...args) => ({ job }: MiddlewareContext) => {
-          t.is(job.jid, jid, "jid does not match");
-          t.deepEqual(args, [1, 2, "three"], "args do not match");
-          resolve();
-        },
+        [jobtype]:
+          (...args) =>
+          ({ job }: MiddlewareContext) => {
+            t.is(job.jid, jid, "jid does not match");
+            t.deepEqual(args, [1, 2, "three"], "args do not match");
+            resolve();
+          },
       },
     });
 
@@ -74,16 +77,18 @@ test("handles sync jobfn and async (thunk)", async (t) => {
   const args = [1, 2, "three"];
   const { queue, jobtype, jid } = await push({ args });
 
-  await new Promise<void>((resolve) => {
+  return new Promise<void>((resolve) => {
     const worker = create({
       queues: [queue],
       registry: {
-        [jobtype]: (...args) => async ({ job }: MiddlewareContext) => {
-          await sleep(1);
-          t.is(job.jid, jid, "jid does not match");
-          t.deepEqual(args, [1, 2, "three"], "args do not match");
-          resolve();
-        },
+        [jobtype]:
+          (...args) =>
+          async ({ job }: MiddlewareContext) => {
+            await sleep(1);
+            t.is(job.jid, jid, "jid does not match");
+            t.deepEqual(args, [1, 2, "three"], "args do not match");
+            resolve();
+          },
       },
     });
 
@@ -96,14 +101,15 @@ test("handles async jobfn and sync thunk", async (t) => {
   const { queue, jobtype, jid } = await push({ args });
   const worker = create({ queues: [queue] });
 
-  await new Promise<void>(async (resolve) => {
+  return new Promise<void>(async (resolve) => {
     worker.register(
       jobtype,
-      async (...args) => ({ job }: MiddlewareContext) => {
-        t.is(job.jid, jid, "jid does not match");
-        t.deepEqual(args, [1, 2, "three"], "args do not match");
-        resolve();
-      }
+      async (...args) =>
+        ({ job }: MiddlewareContext) => {
+          t.is(job.jid, jid, "jid does not match");
+          t.deepEqual(args, [1, 2, "three"], "args do not match");
+          resolve();
+        }
     );
 
     await worker.work();
@@ -119,12 +125,14 @@ test("handles async jobfn and async thunk", async (t) => {
     const worker = create({
       queues: [queue],
       registry: {
-        [jobtype]: async (...args) => async ({ job }: MiddlewareContext) => {
-          await sleep(1);
-          t.is(job.jid, jid, "jid does not match");
-          t.deepEqual(args, [1, 2, "three"], "args do not match");
-          resolve();
-        },
+        [jobtype]:
+          async (...args) =>
+          async ({ job }: MiddlewareContext) => {
+            await sleep(1);
+            t.is(job.jid, jid, "jid does not match");
+            t.deepEqual(args, [1, 2, "three"], "args do not match");
+            resolve();
+          },
       },
     });
 
@@ -242,5 +250,26 @@ test(".handle() FAILs when the job returns a rejected promise with no error", as
       });
       worker.work();
     });
+  });
+});
+
+test("job context contains an AbortSignal", async (t) => {
+  t.plan(1);
+  const args = [1, 2, "three"];
+  const { queue, jobtype, jid } = await push({ args });
+  const worker = create({ queues: [queue] });
+
+  return new Promise<void>(async (resolve, reject) => {
+    const listening = new Promise<void>(async (isListening) => {
+      worker.register(
+        jobtype,
+        async (...args) =>
+          async ({ job, signal }: MiddlewareContext) => {
+            t.assert(signal instanceof AbortSignal);
+            resolve();
+          }
+      );
+    });
+    await worker.work();
   });
 });

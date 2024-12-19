@@ -1,3 +1,9 @@
+## 4.7.0 | 2024-12-17
+
+Features:
+
+- Job context now includes property `signal: AbortSignal` for job functions to use for more graceful shutdowns during a hard shutdown. Thanks, @knpwrs (#409)
+
 ## 4.6.0 | 2024-07-24
 
 Features:

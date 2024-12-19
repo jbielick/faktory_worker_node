@@ -415,7 +415,7 @@ test("#ofType disallows nonstring argument", (t) => {
   t.throws(
     () => {
       const mutation = new Mutation(new Client());
-      const MyJob = () => { };
+      const MyJob = () => {};
       // @ts-ignore
       mutation.ofType(MyJob);
     },
