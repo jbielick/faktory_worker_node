@@ -3,6 +3,7 @@ import { v4 as uuid } from "uuid";
 import { strict as assert } from "assert";
 import { ComposedMiddleware, Middleware as KoaMiddleware } from "koa-compose";
 import { EventEmitter } from "events";
+import { setTimeout } from "timers/promises";
 
 import { JobPayload, JobType } from "./job";
 import { Client, ClientOptions } from "./client";
@@ -12,10 +13,12 @@ import createExecutionChain from "./create-execution-chain";
 import { strictlyOrdered, weightedRandom } from "./queues";
 
 const debug = makeDebug("faktory-worker:worker");
+const fail = Symbol("fail");
+export const CLEANUP_DELAY_MS = process.env.NODE_ENV === "test" ? 100 : 3000;
+export const SHUTDOWN_TIMEOUT_EXCEEDED_MSG =
+  "faktory worker shutdown timeout exceeded";
 
-export type Registry = {
-  [jobtype: string]: JobFunction;
-};
+export type Registry = Record<string, JobFunction>;
 
 export type JobFunctionContextWrapper = {
   (...args: unknown[]): ContextProvider;
@@ -31,6 +34,7 @@ export type ContextProvider = (ctx: MiddlewareContext) => unknown;
 
 export interface MiddlewareContext {
   job: JobPayload;
+  signal: AbortSignal;
   fn?: JobFunction;
 }
 
@@ -69,10 +73,12 @@ export class Worker extends EventEmitter {
   private readonly queueFn: () => string[];
   readonly middleware: Middleware[];
   private readonly registry: Registry;
+  private abortCtl: AbortController;
   private quieted: boolean | undefined;
-  private working: Map<string, Promise<string>>;
+  readonly working: Map<JobPayload, Promise<string>>;
   private execute: ComposedMiddleware<MiddlewareContext>;
-  private pulse: NodeJS.Timer;
+  private pulse: NodeJS.Timeout;
+  private untrapSignals?: () => void;
   readonly client: Client;
 
   /**
@@ -122,14 +128,14 @@ export class Worker extends EventEmitter {
 
   private async tick(): Promise<void> {
     if (this.quieted) return;
+    if (this.abortCtl.signal.aborted) return;
     try {
       if (this.working.size >= this.concurrency) {
         await Promise.race(this.working.values());
       } else {
         const job = await this.fetch();
         if (job) {
-          const { jid } = job;
-          this.working.set(jid, this.handle(job));
+          this.working.set(job, this.handle(job));
         }
       }
     } catch (e) {
@@ -151,6 +157,7 @@ export class Worker extends EventEmitter {
   async work(): Promise<Worker> {
     debug("work concurrency=%i", this.concurrency);
     this.quieted = false;
+    this.abortCtl = new AbortController();
     this.execute = createExecutionChain(this.middleware, this.registry);
     await this.beat();
     this.pulse = setInterval(async () => {
@@ -163,7 +170,7 @@ export class Worker extends EventEmitter {
         );
       }
     }, this.beatInterval);
-    this.trapSignals();
+    this.untrapSignals = this.trapSignals();
     this.tick();
     return this;
   }
@@ -183,36 +190,77 @@ export class Worker extends EventEmitter {
    * @return {promise} resolved when worker stops
    */
   async stop(): Promise<void> {
-    Worker.removeSignalHandlers();
     debug("stop");
     this.quiet();
-    clearInterval(this.pulse);
-    let forced = false;
 
-    return new Promise(async (resolve) => {
-      const timeout = setTimeout(async () => {
-        debug("shutdown timeout exceeded");
-        forced = true;
-        // @TODO fail in progress jobs so they retry faster
-        this.client.close();
-        resolve();
-        process.exit(1);
-      }, this.shutdownTimeout);
+    debug("deregistering signal handlers");
+    this.untrapSignals?.();
 
-      process.nextTick(async () => {
-        try {
-          debug("awaiting in progress");
-          await Promise.all(this.working.values());
-          debug("all clear");
-          if (forced) return;
-          await this.client.close();
-          clearTimeout(timeout);
-          resolve();
-        } catch (e) {
-          console.warn("error during graceful shutdown:", e);
-        }
+    // @TODO if SIGINTed a second time, skip ahead to abort
+
+    const abortTimeoutCtl = new AbortController();
+
+    const abortAfterTimeout = async (): Promise<void> => {
+      await setTimeout(this.shutdownTimeout, undefined, {
+        signal: abortTimeoutCtl.signal,
       });
-    });
+      debug(SHUTDOWN_TIMEOUT_EXCEEDED_MSG);
+      this.abortCtl?.abort(new Error(SHUTDOWN_TIMEOUT_EXCEEDED_MSG));
+      try {
+        // FAIL in-progress jobs as they have been aborted
+        await Promise.all(
+          [...this.working.keys()].map((job) =>
+            this[fail](job, this.abortCtl?.signal.reason)
+          )
+        );
+      } catch (e) {
+        // jobs aren't necessarily lost here, as they will be requeued by the server
+        // after their reservation timeout
+        this.emit("error", e);
+      }
+      // An abort signal was sent, but jobs may need a little time to do cleanup.
+      await setTimeout(CLEANUP_DELAY_MS, undefined, {
+        signal: abortTimeoutCtl.signal,
+      });
+    };
+
+    const allJobsComplete = async (): Promise<void> => {
+      debug(
+        `awaiting ${this.working.size} job${
+          this.working.size > 1 ? "s" : ""
+        } in progress`
+      );
+      await Promise.all(this.working.values());
+      // jobs were aborted and have a little time to cleanup
+      if (this.abortCtl?.signal.aborted) return;
+      // jobs finished before an abort
+      debug("all clear");
+      // and we can cancel the imminent abort/hard shutdown
+      abortTimeoutCtl.abort();
+    };
+
+    try {
+      await Promise.race([allJobsComplete(), abortAfterTimeout()]);
+    } catch (e) {
+      if (e.code !== "ABORT_ERR") {
+        throw e;
+      } else {
+        this.emit("error", e);
+      }
+    } finally {
+      clearInterval(this.pulse);
+      await this.client.close();
+      if (this.abortCtl?.signal.aborted) {
+        process.exit(1);
+      }
+    }
+  }
+
+  async [fail](job: JobPayload, error: Error): Promise<void> {
+    const { jid } = job;
+    await this.client.fail(jid, error);
+    debug(`FAIL ${jid}`);
+    this.emit("fail", { job, error });
   }
 
   /**
@@ -254,33 +302,34 @@ export class Worker extends EventEmitter {
    *
    * @private
    * @param  {JobPayload} job the job payload from the server
-   * @return {Promise<string>} 'ack' or 'fail' depending on job handling resu
+   * @return {Promise<string>} 'ack' or 'fail' depending on job handling result
    */
   private async handle(job: JobPayload): Promise<string> {
     const { jid } = job;
     let error;
     try {
       debug(`executing ${jid}`);
-      await this.execute({ job });
+      await this.execute({ job, signal: this.abortCtl.signal });
     } catch (e) {
       error = wrapNonErrors(e);
     }
     try {
-      if (!error) {
+      if (this.abortCtl?.signal.aborted) {
+        // job will be FAILed in the shutdown task
+        return "abort";
+      } else if (!error) {
         await this.client.ack(jid);
         debug(`ACK ${jid}`);
         return "done";
       } else {
-        await this.client.fail(jid, error);
-        debug(`FAIL ${jid}`);
-        this.emit("fail", { job, error });
+        await this[fail](job, error);
         return "fail";
       }
     } catch (e) {
       this.emit("error", e);
       return "error";
     } finally {
-      this.working.delete(jid);
+      this.working.delete(job);
     }
   }
 
@@ -333,18 +382,17 @@ export class Worker extends EventEmitter {
   /**
    * @private
    */
-  private trapSignals(): void {
+  private trapSignals(): () => void {
     // istanbul ignore next
-    process
-      .once("SIGTERM", () => this.stop())
-      .once("SIGTSTP", () => this.quiet())
-      .once("SIGINT", () => this.stop());
-  }
+    const stop = () => this.stop();
+    const quiet = () => this.quiet();
+    process.once("SIGTERM", stop).once("SIGTSTP", quiet).once("SIGINT", stop);
 
-  private static removeSignalHandlers(): void {
-    process
-      .removeAllListeners("SIGTERM")
-      .removeAllListeners("SIGTSTP")
-      .removeAllListeners("SIGINT");
+    return () => {
+      process
+        .removeListener("SIGTERM", stop)
+        .removeListener("SIGTSTP", quiet)
+        .removeListener("SIGINT", stop);
+    };
   }
 }

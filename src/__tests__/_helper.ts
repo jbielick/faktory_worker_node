@@ -1,5 +1,5 @@
 import { TestFn, ExecutionContext } from "ava";
-import { promisify } from 'util'
+import { promisify } from "util";
 import { Socket, createServer, Server } from "net";
 import { v4 as uuid } from "uuid";
 import getPort from "get-port";
@@ -27,7 +27,7 @@ export const mockServer = (): Server => {
       let data = rawData;
       try {
         data = JSON.parse(rawData);
-      } catch (_) { }
+      } catch (_) {}
       server.emit(command, <ServerControl>{ command, data, socket });
       server.emit("*", <ServerControl>{ command, data, socket });
     });
@@ -35,7 +35,7 @@ export const mockServer = (): Server => {
     socket.write('+HI {"v":2,"s":"abc","i":3}\r\n');
     server.emit("HI");
   });
-  server.on('error', console.error);
+  server.on("error", console.error);
   return server;
 };
 
@@ -54,40 +54,48 @@ export const mocked = async (fn: ServerUser): Promise<unknown> => {
         server.close(resolve);
       }
     });
-  })
+  });
 };
 
-mocked.ok = () => ({ socket }: ServerControl) => {
-  socket.write("+OK\r\n");
-};
+mocked.ok =
+  () =>
+  ({ socket }: ServerControl) => {
+    socket.write("+OK\r\n");
+  };
 
 mocked.fail = mocked.ok;
 
-mocked.beat = (state?: string) => ({ socket }: ServerControl) => {
-  if (!state) {
-    socket.write("+OK\r\n");
-  } else {
-    const json = JSON.stringify({ state });
-    socket.write(`$${json.length}\r\n${json}\r\n`);
-  }
-};
-mocked.fetch = (job: PartialJobPayload | null) => ({ socket }: ServerControl) => {
-  if (job) {
-    const string = JSON.stringify(job);
-    socket.write(`$${string.length}\r\n${string}\r\n`);
-  } else {
-    socket.write("$-1\r\n");
-  }
-};
+mocked.beat =
+  (state?: string) =>
+  ({ socket }: ServerControl) => {
+    if (!state) {
+      socket.write("+OK\r\n");
+    } else {
+      const json = JSON.stringify({ state });
+      socket.write(`$${json.length}\r\n${json}\r\n`);
+    }
+  };
+mocked.fetch =
+  (job: PartialJobPayload | null) =>
+  ({ socket }: ServerControl) => {
+    if (job) {
+      const string = JSON.stringify(job);
+      socket.write(`$${string.length}\r\n${string}\r\n`);
+    } else {
+      socket.write("$-1\r\n");
+    }
+  };
 
-mocked.info = () => ({ socket }: ServerControl) => {
-  const json = JSON.stringify({
-    queues: [],
-    faktory: {},
-    server_utc_time: Date.now(),
-  });
-  socket.write(`$${json.length}\r\n${json}\r\n`);
-};
+mocked.info =
+  () =>
+  ({ socket }: ServerControl) => {
+    const json = JSON.stringify({
+      queues: [],
+      faktory: {},
+      server_utc_time: Date.now(),
+    });
+    socket.write(`$${json.length}\r\n${json}\r\n`);
+  };
 
 export const sleep = (ms: number, value?: unknown): Promise<unknown> => {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
@@ -109,9 +117,11 @@ export const push = async ({
   args,
   queue,
   jobtype,
-}: { args?: unknown[]; queue?: string; jobtype?: string } = {}): Promise<
-  JobPayload
-> => {
+}: {
+  args?: unknown[];
+  queue?: string;
+  jobtype?: string;
+} = {}): Promise<JobPayload> => {
   const client = new Client();
 
   const job = client.job(jobtype || "test");
@@ -139,4 +149,4 @@ export function registerCleaner(test: TestFn): void {
 export const withCallback = (fn: Function) => async (t: ExecutionContext) => {
   await promisify(fn)(t);
   t.pass();
-}
+};
