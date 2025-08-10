@@ -122,6 +122,7 @@ export class Worker extends EventEmitter {
       password: options.password,
       poolSize: options.poolSize || this.concurrency + 2,
       labels: options.labels || [],
+      tlsOptions: options.tlsOptions,
     });
     this.on("error", this.onerror);
   }
