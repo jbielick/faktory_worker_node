@@ -265,6 +265,7 @@ Creates a Client with a connection pool
 | [options.wid] | <code>string</code> |  | optional wid that should be provided to the server                               (only necessary for a worker process consuming jobs) |
 | [options.labels] | <code>Array.&lt;string&gt;</code> | <code>[]</code> | optional labels to provide the faktory server                                       for this client |
 | [options.poolSize] | <code>number</code> | <code>10</code> | the maxmimum size of the connection pool |
+| [options.tlsOptions] | <code>object</code> | <code>{}</code> | TLS configuration options (passed to                                         Node's tls.connect) used when establishing a                                         secure connection to the Faktory server. |
 
 **Example**  
 ```js
@@ -717,6 +718,7 @@ started per-process.
 | [options.middleware] | <code>Array.&lt;function()&gt;</code> | <code>[]</code> | a set of middleware to run before performing                                               each job                                       in koa.js-style middleware execution signature |
 | [options.registry] | [<code>Registry</code>](#Registry) | <code>Registry</code> | the job registry to use when working |
 | [options.poolSize] | <code>Number</code> | <code>concurrency+2</code> | the client connection pool size for                                                  this worker |
+| [options.tlsOptions] | <code>object</code> | <code>{}</code> | TLS configuration options (passed to                                         Node's tls.connect) used when establishing a                                         secure connection to the Faktory server. |
 
 **Example**  
 ```js
