@@ -81,16 +81,13 @@ export class Connection extends EventEmitter {
     super();
     this.host = host;
     this.port = port;
-    this.connected = false;
-    this.socket = new Socket();
-    this.socket.setKeepAlive(true);
     this.tlsOptions = tlsOptions;
+    this.connected = false;
     this.pending = [];
     this.parser = new RedisParser({
       returnReply: (response: string) => this.pending.pop()?.resolve(response),
       returnError: (err: Error) => this.pending.pop()?.reject(err),
     });
-    this.listen();
   }
 
   /**
@@ -124,23 +121,17 @@ export class Connection extends EventEmitter {
     if (this.connected) throw new Error("already connected!");
     debug("connecting");
 
-    const receiveGreetingResponse = new Promise((resolve, reject) => {
+    if (this.tlsOptions) {
+      this.socket = tlsConnect(Number(this.port), this.host, this.tlsOptions);
+    } else {
+      this.socket = connect(Number(this.port), this.host);
+    }
+    this.socket.setKeepAlive(true);
+    this.listen();
+
+    const response = await new Promise<string>((resolve, reject) => {
       this.pending.unshift({ resolve, reject });
     });
-
-    if (this.tlsOptions !== undefined) {
-      this.socket = tlsConnect({
-        host: this.host,
-        port: Number(this.port),
-        ...this.tlsOptions,
-      });
-      this.socket.setKeepAlive(true);
-      this.listen(); // Re-setup event listeners for the TLS socket
-    } else {
-      this.socket.connect(<number>this.port, this.host || "127.0.0.1");
-    }
-
-    const response = <string>await receiveGreetingResponse;
     const greeting = JSON.parse(response.split(" ")[1]);
     this.emit("greeting", greeting);
     return greeting;
@@ -247,15 +238,16 @@ export class Connection extends EventEmitter {
    * @return {Promise} resolved when underlying socket emits "close"
    */
   async close(): Promise<void> {
+    if (!this.connected) return;
     if (this.closing) return;
     this.closing = true;
     return new Promise<void>((resolve) =>
       this.socket
-        .once("close", () => {
+        ?.once("close", () => {
           this.socket.removeAllListeners();
           resolve();
         })
-        .end("END\r\n")
+        ?.end("END\r\n")
     );
   }
 }
