@@ -98,6 +98,9 @@ export class Client {
    * @param {string[]} [options.labels=[]] optional labels to provide the faktory server
    *                                       for this client
    * @param {number} [options.poolSize=10] the maxmimum size of the connection pool
+   * @param {object} [options.tlsOptions={}] TLS configuration options (passed to
+   *                                         Node's tls.connect) used when establishing a
+   *                                         secure connection to the Faktory server.
    */
   constructor(options: ClientOptions = {}) {
     const url = new URL(options.url || FAKTORY_URL);
