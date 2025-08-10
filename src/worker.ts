@@ -96,6 +96,9 @@ export class Worker extends EventEmitter {
    * @param  {Registry} [options.registry=Registry]: the job registry to use when working
    * @param {Number} [options.poolSize=concurrency+2] the client connection pool size for
    *                                                  this worker
+   * @param {object} [options.tlsOptions={}] TLS configuration options (passed to
+   *                                         Node's tls.connect) used when establishing a
+   *                                         secure connection to the Faktory server.
    */
   constructor(options: WorkerOptions = {}) {
     super();
