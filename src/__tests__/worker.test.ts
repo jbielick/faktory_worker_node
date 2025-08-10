@@ -1,7 +1,13 @@
 import test from "ava";
 
 import { Worker } from "../worker";
-import { sleep, mocked, registerCleaner } from "./_helper";
+import {
+  sleep,
+  mocked,
+  mockedTLS,
+  registerCleaner,
+  clientTLSOptions,
+} from "./_helper";
 
 registerCleaner(test);
 
@@ -40,10 +46,10 @@ test("passes the password to the client", (t) => {
 test("passes poolSize option to Client", (t) => {
   const worker = new Worker({ poolSize: 8 });
 
-  t.is(worker.client.pool.size, 8);
+  t.is(worker.client.pool.max, 8);
 });
 
-test.only("allows registering job functions", async (t) => {
+test("allows registering job functions", async (t) => {
   await mocked(async (server, port) => {
     server
       .on("BEAT", mocked.beat())
@@ -80,6 +86,35 @@ test("hearbeats", async (t) => {
         .on("FETCH", mocked.fetch(null));
 
       worker = new Worker({ concurrency: 1, port, beatInterval: 0.1 });
+      worker.work();
+    });
+  });
+});
+
+test("hearbeats (TLS)", async (t) => {
+  await mockedTLS(async (server, port) => {
+    let worker: Worker;
+    let called = 0;
+
+    return new Promise<void>((resolve) => {
+      server
+        .on("BEAT", ({ socket }) => {
+          called += 1;
+          if (called == 3) {
+            t.pass();
+            resolve();
+            worker.stop();
+          }
+          mocked.beat()({ socket });
+        })
+        .on("FETCH", mocked.fetch(null));
+
+      worker = new Worker({
+        concurrency: 1,
+        port,
+        beatInterval: 0.1,
+        tlsOptions: clientTLSOptions,
+      });
       worker.work();
     });
   });

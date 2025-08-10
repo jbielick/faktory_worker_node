@@ -2,7 +2,12 @@ import test from "ava";
 
 import { Client } from "../client";
 import { Job, JobPayload } from "../job";
-import { mocked, registerCleaner } from "./_helper";
+import {
+  mocked,
+  mockedTLS,
+  clientTLSOptions,
+  registerCleaner,
+} from "./_helper";
 
 registerCleaner(test);
 
@@ -182,6 +187,27 @@ test("#connect: connects explicitly", async (t) => {
         t.is(1, 1);
       });
     const client = new Client({ port });
+
+    await client.connect();
+    return client.close();
+  });
+});
+
+test("#connect+tls: connects to TLS listener explicitly", async (t) => {
+  t.plan(2);
+  await mockedTLS(async (server, port) => {
+    server
+      .on("HELLO", () => {
+        t.is(1, 1);
+      })
+      .on("END", () => {
+        t.is(1, 1);
+      });
+
+    const client = new Client({
+      port,
+      tlsOptions: clientTLSOptions,
+    });
 
     await client.connect();
     return client.close();

@@ -1,13 +1,9 @@
 import { strictEqual } from "assert";
 import makeDebug from "debug";
 import { EventEmitter } from "events";
-import { Socket } from "net";
+import { Socket, connect } from "net";
 import RedisParser from "redis-parser";
-import {
-  TLSSocket,
-  connect as tlsConnect,
-  ConnectionOptions as tlsConnectionOptions,
-} from "tls";
+import { TLSSocket, SecureContextOptions, connect as tlsConnect } from "tls";
 
 const debug = makeDebug("faktory-worker:connection");
 
@@ -16,7 +12,6 @@ const SOCKET_TIMEOUT = 10000;
 /**
  * A command to send the server in array form
  *
- * @typedef {string[]} Command
  * @example
  *
  * // multiple string arguments
@@ -40,10 +35,10 @@ export type Greeting = {
 };
 
 export type ConnectionOptions = {
-  host?: string;
-  port?: string | number;
+  host: string;
+  port: string | number;
   password?: string;
-  tlsOptions?: tlsConnectionOptions;
+  tlsOptions?: SecureContextOptions;
 };
 
 /**
@@ -65,13 +60,13 @@ interface PendingRequest {
 export class Connection extends EventEmitter {
   connected: boolean;
   closing: boolean;
-  host: string | undefined;
-  port: string | number;
+  host: ConnectionOptions["host"];
+  port: ConnectionOptions["port"];
   pending: PendingRequest[];
   socket: Socket | TLSSocket;
   parser: RedisParser;
   lastError: Error;
-  tlsOptions: tlsConnectionOptions | undefined;
+  tlsOptions?: SecureContextOptions;
 
   /**
    * @param {Number} port the port to connect on
@@ -80,8 +75,8 @@ export class Connection extends EventEmitter {
    */
   constructor(
     port: string | number,
-    host?: string,
-    tlsOptions?: tlsConnectionOptions
+    host: string,
+    tlsOptions?: SecureContextOptions
   ) {
     super();
     this.host = host;

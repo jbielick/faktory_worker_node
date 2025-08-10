@@ -1,10 +1,26 @@
 import { TestFn, ExecutionContext } from "ava";
 import { promisify } from "util";
 import { Socket, createServer, Server } from "net";
+import {
+  createServer as createTLSServer,
+  TlsOptions,
+  ConnectionOptions,
+} from "tls";
 import { v4 as uuid } from "uuid";
 import getPort from "get-port";
 import { Client } from "../client";
 import { JobPayload, PartialJobPayload } from "../job";
+import { readFileSync } from "node:fs";
+import path from "path";
+
+const serverTLSOptions: TlsOptions = {
+  key: readFileSync(path.resolve(__dirname, "../../hack/tls/server.key")),
+  cert: readFileSync(path.resolve(__dirname, "../../hack/tls/server.pem")),
+};
+
+export const clientTLSOptions: ConnectionOptions = {
+  ca: readFileSync(path.resolve(__dirname, "../../hack/tls/rootCA.pem")),
+};
 
 export type ServerControl = {
   socket: Socket;
@@ -12,15 +28,25 @@ export type ServerControl = {
   data?: string;
 };
 
-export const mockServer = (): Server => {
-  const server = createServer();
+export const mockServer = (
+  { tls }: { tls: boolean } = { tls: false }
+): Server => {
+  let server: Server;
+  let connectedEventName: string;
+  if (tls) {
+    server = createTLSServer(serverTLSOptions);
+    connectedEventName = "secureConnection";
+  } else {
+    server = createServer();
+    connectedEventName = "connection";
+  }
 
-  server.on("connection", (socket) => {
+  server.on(connectedEventName, (socket) => {
     server
       .once("HELLO", ({ socket }: ServerControl) => socket.write("+OK\r\n"))
       .on("END", ({ socket }: ServerControl) => socket.destroy());
 
-    socket.on("data", (chunk) => {
+    socket.on("data", (chunk: Buffer) => {
       const string = chunk.toString();
       const [command] = string.replace(/\r\n$/, "").split(" ", 1);
       const rawData = string.replace(`${command} `, "");
@@ -45,6 +71,20 @@ type ServerUser = {
 
 export const mocked = async (fn: ServerUser): Promise<unknown> => {
   const server = mockServer();
+  const port = await getPort();
+  return new Promise((resolve, reject) => {
+    server.listen({ port, host: "127.0.0.1" }, async () => {
+      try {
+        resolve(await fn(server, port));
+      } finally {
+        server.close(resolve);
+      }
+    });
+  });
+};
+
+export const mockedTLS = async (fn: ServerUser): Promise<unknown> => {
+  const server = mockServer({ tls: true });
   const port = await getPort();
   return new Promise((resolve, reject) => {
     server.listen({ port, host: "127.0.0.1" }, async () => {

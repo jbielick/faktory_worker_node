@@ -106,8 +106,8 @@ export class Client {
     this.labels = options.labels || [];
     this.wid = options.wid;
     this.connectionFactory = new ConnectionFactory({
-      host: options.host || url.hostname,
-      port: options.port || url.port,
+      host: options.host || url.hostname || "127.0.0.1",
+      port: options.port || url.port || 7419,
       handshake: this.handshake.bind(this),
       tlsOptions: options.tlsOptions || undefined,
     });
