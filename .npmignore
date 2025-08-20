@@ -13,3 +13,8 @@ ISSUE_TEMPLATE.md
 .nyc_output
 package-lock.json
 yarn.lock
+hack/
+tsconfig.json
+issues/
+bin/server
+.prettierrc.js
