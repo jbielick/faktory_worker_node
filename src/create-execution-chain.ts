@@ -1,5 +1,6 @@
 import compose, { ComposedMiddleware } from "koa-compose";
-import { Middleware, MiddlewareContext, Registry } from "./worker";
+import { Middleware, Context } from "./middleware";
+import { Registry } from "./job";
 
 /**
  * Builds a koa-compose stack of the middleware functions in addition to
@@ -13,7 +14,7 @@ import { Middleware, MiddlewareContext, Registry } from "./worker";
 export default function createExecutionChain(
   middleware: Middleware[],
   registry: Registry
-): ComposedMiddleware<MiddlewareContext> {
+): ComposedMiddleware<Context> {
   return compose([
     ...middleware,
     function getJobFnFromRegistry(ctx, next) {

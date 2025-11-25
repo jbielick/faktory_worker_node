@@ -1,7 +1,50 @@
 import { v4 as uuid } from "uuid";
+
 import { Client } from "./client";
+import { Context } from "./middleware";
 
 export type JobType = string;
+
+/**
+ * @private
+ */
+type AnyJobArgs = any[];
+
+/**
+ * @private
+ */
+type AnyJobReturnValue = void;
+
+/**
+ * @private
+ */
+export interface ContextProvider {
+  (ctx: Context): AnyJobReturnValue;
+}
+
+/**
+ * @private
+ */
+export interface JobFunctionContextWrapper {
+  (...args: AnyJobArgs): ContextProvider;
+}
+
+/**
+ * @private
+ */
+export interface UnWrappedJobFunction {
+  (...args: AnyJobArgs): AnyJobReturnValue;
+}
+
+/**
+ * @private
+ */
+export type JobFunction = JobFunctionContextWrapper | UnWrappedJobFunction;
+
+/**
+ * @private
+ */
+export type Registry = Record<JobType, JobFunction>;
 
 /**
  * @private

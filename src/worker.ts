@@ -1,12 +1,13 @@
 import makeDebug from "debug";
 import { v4 as uuid } from "uuid";
 import { strict as assert } from "assert";
-import { ComposedMiddleware, Middleware as KoaMiddleware } from "koa-compose";
+import { ComposedMiddleware } from "koa-compose";
 import { EventEmitter } from "events";
 import { setTimeout } from "timers/promises";
 
-import { JobPayload, JobType } from "./job";
+import { JobPayload, JobType, JobFunction, Registry } from "./job";
 import { Client, ClientOptions } from "./client";
+import { Middleware, Context } from "./middleware";
 import { wrapNonErrors } from "./utils";
 import { sleep } from "./utils";
 import createExecutionChain from "./create-execution-chain";
@@ -18,27 +19,14 @@ export const CLEANUP_DELAY_MS = process.env.NODE_ENV === "test" ? 100 : 3000;
 export const SHUTDOWN_TIMEOUT_EXCEEDED_MSG =
   "faktory worker shutdown timeout exceeded";
 
-export type Registry = Record<string, JobFunction>;
-
-export type JobFunctionContextWrapper = {
-  (...args: unknown[]): ContextProvider;
-};
-
-export type UnWrappedJobFunction = {
-  (...args: unknown[]): unknown;
-};
-
-export type JobFunction = JobFunctionContextWrapper | UnWrappedJobFunction;
-
-export type ContextProvider = (ctx: MiddlewareContext) => unknown;
-
-export interface MiddlewareContext {
-  job: JobPayload;
-  signal: AbortSignal;
-  fn?: JobFunction;
-}
-
-export type Middleware = KoaMiddleware<MiddlewareContext>;
+export {
+  Registry,
+  JobFunctionContextWrapper,
+  UnWrappedJobFunction,
+  ContextProvider,
+  JobFunction,
+} from "./job";
+export { Middleware, Context as MiddlewareContext } from "./middleware";
 
 export type WorkerOptions = {
   wid?: string;
@@ -76,7 +64,7 @@ export class Worker extends EventEmitter {
   private abortCtl: AbortController;
   private quieted: boolean | undefined;
   readonly working: Map<JobPayload, Promise<string>>;
-  private execute: ComposedMiddleware<MiddlewareContext>;
+  private execute: ComposedMiddleware<Context>;
   private pulse: NodeJS.Timeout;
   private untrapSignals?: () => void;
   readonly client: Client;

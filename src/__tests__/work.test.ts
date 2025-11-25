@@ -1,6 +1,6 @@
 import test from "ava";
 
-import { Worker, WorkerOptions, MiddlewareContext } from "../worker";
+import { Worker, WorkerOptions } from "../worker";
 import { sleep, push, mocked, registerCleaner } from "./_helper";
 
 const concurrency = 1;
@@ -61,7 +61,7 @@ test("handles sync jobfn and sync thunk", async (t) => {
       registry: {
         [jobtype]:
           (...args) =>
-          ({ job }: MiddlewareContext) => {
+          ({ job }) => {
             t.is(job.jid, jid, "jid does not match");
             t.deepEqual(args, [1, 2, "three"], "args do not match");
             resolve();
@@ -83,7 +83,7 @@ test("handles sync jobfn and async (thunk)", async (t) => {
       registry: {
         [jobtype]:
           (...args) =>
-          async ({ job }: MiddlewareContext) => {
+          async ({ job }) => {
             await sleep(1);
             t.is(job.jid, jid, "jid does not match");
             t.deepEqual(args, [1, 2, "three"], "args do not match");
@@ -102,15 +102,11 @@ test("handles async jobfn and sync thunk", async (t) => {
   const worker = create({ queues: [queue] });
 
   return new Promise<void>(async (resolve) => {
-    worker.register(
-      jobtype,
-      async (...args) =>
-        ({ job }: MiddlewareContext) => {
-          t.is(job.jid, jid, "jid does not match");
-          t.deepEqual(args, [1, 2, "three"], "args do not match");
-          resolve();
-        }
-    );
+    worker.register(jobtype, async (...args) => ({ job }) => {
+      t.is(job.jid, jid, "jid does not match");
+      t.deepEqual(args, [1, 2, "three"], "args do not match");
+      resolve();
+    });
 
     await worker.work();
     await worker.stop();
@@ -127,7 +123,7 @@ test("handles async jobfn and async thunk", async (t) => {
       registry: {
         [jobtype]:
           async (...args) =>
-          async ({ job }: MiddlewareContext) => {
+          async ({ job }) => {
             await sleep(1);
             t.is(job.jid, jid, "jid does not match");
             t.deepEqual(args, [1, 2, "three"], "args do not match");
@@ -260,15 +256,11 @@ test("job context contains an AbortSignal", async (t) => {
   const worker = create({ queues: [queue] });
 
   return new Promise<void>(async (resolve, reject) => {
-    const listening = new Promise<void>(async (isListening) => {
-      worker.register(
-        jobtype,
-        async (...args) =>
-          async ({ job, signal }: MiddlewareContext) => {
-            t.assert(signal instanceof AbortSignal);
-            resolve();
-          }
-      );
+    new Promise<void>(async () => {
+      worker.register(jobtype, () => async ({ signal }) => {
+        t.assert(signal instanceof AbortSignal);
+        resolve();
+      });
     });
     await worker.work();
   });

@@ -1,43 +1,21 @@
 import makeDebug from "debug";
 import { strict as assert } from "assert";
-import { Middleware as KoaMiddleware } from "koa-compose";
 
+import { Middleware } from "./middleware";
 import { Client, ClientOptions } from "./client";
 import { Worker, WorkerOptions } from "./worker";
-import { Job, JobPayload, JobType } from "./job";
+import { Job, JobType, JobFunction, Registry } from "./job";
 import { Mutation } from "./mutation";
 
 const debug = makeDebug("faktory-worker");
 
-/**
- * @private
- */
-export type JobFunctionContextWrapper = {
-  (...args: unknown[]): ContextProvider;
-};
-
-/**
- * @private
- */
-export type UnWrappedJobFunction = {
-  (...args: unknown[]): unknown;
-};
-
-/**
- * @private
- */
-export type JobFunction = JobFunctionContextWrapper | UnWrappedJobFunction;
-
-export type ContextProvider = (ctx: MiddlewareContext) => unknown;
-export interface MiddlewareContext {
-  job: JobPayload;
-  fn?: JobFunction;
-}
-export type Middleware = KoaMiddleware<MiddlewareContext>;
-
-export type Registry = {
-  [jobtype: string]: JobFunction;
-};
+export {
+  JobFunctionContextWrapper,
+  UnWrappedJobFunction,
+  JobFunction,
+} from "./job";
+export { ContextProvider } from "./job";
+export { Middleware, Context as MiddlewareContext } from "./middleware";
 
 export interface FaktoryControl {
   registry: Registry;
@@ -130,8 +108,8 @@ export function create(): FaktoryControl {
     /**
      * Adds a {@link JobFunction} to the {@link Registry}
      *
-     * @param  {Jobtype}   name string descriptor for the jobtype
-     * @param  {JobFunction} fn
+     * @param  {Jobtype} name string descriptor for the jobtype
+     * @param  {JobFunction} fn the job function to register
      * @return {FaktoryControl}        this
      * @instance
      * @example
@@ -149,7 +127,7 @@ export function create(): FaktoryControl {
     /**
      * Creates a new {@link Client}
      *
-     * @param  {...*} args args forwarded to {@link Client}
+     * @param  {ClientOptions} options forwarded to {@link Client}
      * @return {Client}
      * @instance
      * @example

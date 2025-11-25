@@ -1,6 +1,7 @@
 import test from "ava";
 
-import { Worker, MiddlewareContext } from "../worker";
+import { Worker } from "../worker";
+import { Context } from "../middleware";
 import { sleep, push, registerCleaner } from "./_helper";
 
 registerCleaner(test);
@@ -70,7 +71,7 @@ test("invokes middleware in order", async (t) => {
 
 test(".use() adds middleware to the stack", (t) => {
   const worker = new Worker();
-  const mmw = () => { };
+  const mmw = () => {};
 
   worker.use(mmw);
 
@@ -83,7 +84,7 @@ test(".use() adds middleware to the stack", (t) => {
 
 type MyAppContext = {
   memo: string[];
-} & MiddlewareContext;
+} & Context;
 
 test("middleware context is passed to job thunk", async (t) => {
   const { queue, jobtype } = await push({ args: [1] });

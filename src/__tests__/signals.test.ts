@@ -2,8 +2,6 @@ import test from "ava";
 
 import {
   Worker,
-  MiddlewareContext,
-  CLEANUP_DELAY_MS,
   SHUTDOWN_TIMEOUT_EXCEEDED_MSG,
   WorkerOptions,
 } from "../worker";
@@ -109,7 +107,7 @@ test("worker exits the process after stop timeout", async (t) => {
       registry: {
         [jobtype]:
           () =>
-          async ({ signal }: MiddlewareContext) => {
+          async ({ signal }) => {
             worker.stop();
             await setTimeout(5000, undefined, { signal });
           },
@@ -240,23 +238,17 @@ test("job context AbortSignal is sent when shutdown timeout is reached", async (
       resolve();
     };
     const listening = new Promise<void>(async (isListening) => {
-      worker.register(
-        jobtype,
-        async (...args) =>
-          async ({ job, signal }: MiddlewareContext) => {
-            signal.addEventListener(
-              "abort",
-              (reason) => {
-                t.assert(
-                  signal.reason.message == SHUTDOWN_TIMEOUT_EXCEEDED_MSG
-                );
-              },
-              { once: true }
-            );
-            isListening();
-            await setTimeout(500, undefined);
-          }
-      );
+      worker.register(jobtype, async (...args) => async ({ job, signal }) => {
+        signal.addEventListener(
+          "abort",
+          (reason) => {
+            t.assert(signal.reason.message == SHUTDOWN_TIMEOUT_EXCEEDED_MSG);
+          },
+          { once: true }
+        );
+        isListening();
+        await setTimeout(500, undefined);
+      });
     });
     worker.work();
     await listening;
@@ -322,7 +314,7 @@ test("jobs are FAILed after the AbortSignal is sent during a hard shutdown", asy
         registry: {
           [jobtype]:
             async () =>
-            async ({ signal }: MiddlewareContext) => {
+            async ({ signal }) => {
               events.push("START");
               started += 1;
               if (started == 2) {
@@ -422,7 +414,7 @@ test("jobs are FAILed after the AbortSignal is sent during a hard shutdown and h
         registry: {
           [jobtype]:
             async () =>
-            async ({ signal }: MiddlewareContext) => {
+            async ({ signal }) => {
               events.push("START");
               started += 1;
               if (started == 2) {
