@@ -9,6 +9,7 @@ import { ConnectionFactory } from "./connection-factory";
 import { Job, JobPayload, JobType, PartialJobPayload } from "./job";
 import { DEAD, Mutation, RETRIES, SCHEDULED } from "./mutation";
 import { encode, hash, toJobPayloadWithDefaults } from "./utils";
+import { Batch, BatchOptions, BatchStatus } from "./batch";
 
 const debug = makeDebug("faktory-worker:client");
 const heartDebug = makeDebug("faktory-worker:client:heart");
@@ -355,5 +356,30 @@ For the best performance, consider pushing ~1000 jobs at a time to the server.
     const mutation = new Mutation(this);
     mutation.target = DEAD;
     return mutation;
+  }
+
+  batch(options?: BatchOptions): Batch {
+    return new Batch(this, options);
+  }
+
+  async batchNew(batch: Batch): Promise<string> {
+    return this.send(["BATCH", "NEW", encode(batch.toJSON())]);
+  }
+
+  async batchOpen(bid: string): Promise<Batch> {
+    await this.sendWithAssert(["BATCH", "OPEN", bid], "OK");
+    const batch = new Batch(this);
+    batch.bid = bid;
+    return batch;
+  }
+
+  async batchCommit(bid: string): Promise<string> {
+    return this.sendWithAssert(["BATCH", "COMMIT", bid], "OK");
+  }
+
+  async batchStatus(bid: string): Promise<BatchStatus> {
+    return JSON.parse(
+      await this.send(["BATCH", "STATUS", bid])
+    );
   }
 }
