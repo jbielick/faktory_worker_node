@@ -368,9 +368,7 @@ For the best performance, consider pushing ~1000 jobs at a time to the server.
 
   async batchOpen(bid: string): Promise<Batch> {
     await this.sendWithAssert(["BATCH", "OPEN", bid], "OK");
-    const batch = new Batch(this);
-    batch.bid = bid;
-    return batch;
+    return Batch.reopened(this, bid);
   }
 
   async batchCommit(bid: string): Promise<string> {

@@ -82,4 +82,11 @@ export class Batch {
     this.committed = true;
     debug("committed batch %s", this.bid);
   }
+
+  static reopened(client: Client, bid: string): Batch {
+    const batch = new Batch(client);
+    batch.bid = bid;
+    batch.isNew = false;
+    return batch;
+  }
 }
