@@ -137,6 +137,31 @@ mocked.info =
     socket.write(`$${json.length}\r\n${json}\r\n`);
   };
 
+mocked.bid =
+  (bid: string) =>
+  ({ data, socket }: ServerControl) => {
+    const string = typeof data === "string" ? data : "";
+    if (string.startsWith("NEW")) {
+      socket.write(`$${bid.length}\r\n${bid}\r\n`);
+    } else if (
+      string.startsWith("COMMIT") ||
+      string.startsWith("OPEN")
+    ) {
+      socket.write("+OK\r\n");
+    } else if (string.startsWith("STATUS")) {
+      const status = JSON.stringify({
+        bid,
+        total: 0,
+        pending: 0,
+        failed: 0,
+        created_at: new Date().toISOString(),
+        complete_st: "",
+        success_st: "",
+      });
+      socket.write(`$${status.length}\r\n${status}\r\n`);
+    }
+  };
+
 export const sleep = (ms: number, value?: unknown): Promise<unknown> => {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 };
