@@ -1,7 +1,6 @@
 import { default as makeDebug } from "debug";
 import { Client } from "./client";
 import { Job } from "./job";
-import { encode } from "./utils";
 
 const debug = makeDebug("faktory-worker:batch");
 
@@ -43,7 +42,7 @@ export class Batch {
 
   toJSON(): Record<string, unknown> {
     const payload: Record<string, unknown> = {};
-    if (this.description) payload.description = this.description;
+    if (this.description != null) payload.description = this.description;
     if (this.success) payload.success = this.success.toJSON();
     if (this.complete) payload.complete = this.complete.toJSON();
     return payload;

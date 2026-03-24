@@ -69,6 +69,20 @@ test("Batch: commit throws if already committed", async (t) => {
   });
 });
 
+test("Batch: jobs() throws if called twice", async (t) => {
+  await mocked(async (server, port) => {
+    const bid = "b-double";
+    server.on("BATCH", mocked.bid(bid));
+
+    const client = new Client({ port });
+    const batch = client.batch({ description: "test" });
+    await batch.jobs(async () => {});
+    await t.throwsAsync(() => batch.jobs(async () => {}), {
+      message: /must be new/,
+    });
+  });
+});
+
 test("Batch: push sets custom.bid on job", async (t) => {
   t.plan(1);
   await mocked(async (server, port) => {
