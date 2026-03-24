@@ -6,6 +6,7 @@ import { Client, ClientOptions } from "./client";
 import { Worker, WorkerOptions } from "./worker";
 import { Job, JobType, JobFunction, Registry } from "./job";
 import { Mutation } from "./mutation";
+import { Batch, BatchOptions, BatchStatus } from "./batch";
 
 const debug = makeDebug("faktory-worker");
 
@@ -16,6 +17,7 @@ export {
 } from "./job";
 export { ContextProvider } from "./job";
 export { Middleware, Context as MiddlewareContext } from "./middleware";
+export { BatchOptions, BatchStatus } from "./batch";
 
 export interface FaktoryControl {
   registry: Registry;
@@ -29,6 +31,7 @@ export interface FaktoryControl {
   Client: typeof Client;
   Job: typeof Job;
   Mutation: typeof Mutation;
+  Batch: typeof Batch;
   create: FaktoryControlCreator;
 }
 
@@ -59,6 +62,7 @@ export function create(): FaktoryControl {
     Client,
     Job,
     Mutation,
+    Batch,
     create,
     /**
      * Returns the registry for the faktory singleton
@@ -178,7 +182,7 @@ export function create(): FaktoryControl {
   };
 }
 
-export { Worker, WorkerOptions, Client, ClientOptions, Job, Mutation };
+export { Worker, WorkerOptions, Client, ClientOptions, Job, Mutation, Batch };
 const singleton = create();
 // exclusively for the typedescript declaration file
 export default singleton;
